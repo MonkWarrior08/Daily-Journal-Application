@@ -86,7 +86,7 @@ class Journal(QMainWindow):
         # multi-select for supplement
         self.multi_select = QPushButton("select(multi)")
         self.multi_select.clicked.connect(self.open_multi_select)
-        self.multi_select.setVisible(False)
+        self.multi_select.setVisible(True)
 
         content_layout.addWidget(content_label)
         content_layout.addWidget(self.entry_combo)
@@ -158,6 +158,7 @@ class Journal(QMainWindow):
         self.entry_combo.addItems(self.type_options[type])
 
         self.multi_select.setVisible(type == "Supplement")
+        self.entry_combo.setEditable(type == "Supplement")
         self.activity_frame.setVisible(type == "Activity")
 
     def open_multi_select(self):

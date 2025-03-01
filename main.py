@@ -13,7 +13,7 @@ class Journal(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Journal")
-        self.setMinimumSize(600,400)
+        self.setMinimumSize(600,600)
 
         #main widget and layout
         main_widget = QWidget()
@@ -98,6 +98,42 @@ class Journal(QMainWindow):
         self.entry_butn.clicked.connect(self.add_entry)
         main_layout.addWidget(self.entry_butn)
 
+        # splitter for preview and note section
+        splitter = QSplitter(Qt.Vertical)
+        splitter.setChildrenCollapsible(False)
+        main_layout.addWidget(splitter, 1) #stretch factor of 1
+
+        #journal preview section
+        preview = QWidget()
+        preview_layout = QVBoxLayout(preview)
+        preview_label = QLabel("Journal")
+        self.preview_text = QTextEdit()
+        self.preview_text.setReadOnly(True)
+
+        preview_layout.addWidget(preview_label)
+        preview_layout.addWidget(self.preview_text)
+        splitter.addWidget(preview)
+
+        # note section
+        note = QWidget()
+        note_layout = QVBoxLayout(note)
+        note_header_layout = QHBoxLayout()
+        note_label = QLabel("Notes:")
+        self.note_butn = QPushButton("Save Notes")
+        self.note_butn.clicked.connect(self.save_notes)
+        
+        note_header_layout.addWidget(note_label)
+        note_header_layout.addWidget(self.note_butn)
+        note_layout.addLayout(note_header_layout)
+
+        self.note_txt = QTextEdit()
+        note_layout.addWidget(self.note_txt)
+        splitter.addWidget(note)
+
+        splitter.setSizes([300,200])
+
+        self.load_journal()
+
         # type options
         self.type_options = {
             "Wake up": [],
@@ -137,6 +173,9 @@ class Journal(QMainWindow):
                 self.entry_combo.setCurrentText(", ".join(select_items))
 
     def add_entry(self):
+        pass
+
+    def save_notes():
         pass
 
 

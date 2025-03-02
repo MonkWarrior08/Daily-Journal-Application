@@ -66,14 +66,34 @@ class Journal(QMainWindow):
         self.activity_end = QRadioButton("End")
         self.activity_start.setChecked(True) # default as "Start"
 
+
         activity_layout.addWidget(activity_label)
         activity_layout.addWidget(self.activity_start)
         activity_layout.addWidget(self.activity_end)
         activity_layout.addStretch()
 
+        rating_frame = QFrame()
+        rating_layout = QHBoxLayout(rating_frame)
+        rate_label = QLabel("Rating:")
+        
+        self.rating_1 = QRadioButton("1")
+        self.rating_2 = QRadioButton("2")
+        self.rating_3 = QRadioButton("3")
+        self.rating_1.setChecked(True)
+
+        rating_layout.addWidget(rate_label)
+        rating_layout.addWidget(self.rating_1)
+        rating_layout.addWidget(self.rating_2)
+        rating_layout.addWidget(self.rating_3)
+        rating_layout.addStretch()
+
         activity_frame.setVisible(False)
         self.activity_frame = activity_frame
         main_layout.addWidget(activity_frame)
+
+        rating_frame.setVisible(False)
+        self.rating_frame = rating_frame
+        main_layout.addWidget(rating_frame)
 
         # entry section
         content_layout = QHBoxLayout()
@@ -193,7 +213,8 @@ class Journal(QMainWindow):
 
         self.multi_select.setVisible(type == "Supplement")
         self.entry_combo.setEditable(type == "Supplement")
-        self.activity_frame.setVisible(type == "Activity")
+        self.activity_frame.setVisible(type == "Activity" or type == "Discomfort")
+        self.rating_frame.setVisible(type == "Discomfort")
 
     def open_multi_select(self):
         dialog = MultiDialogue(
@@ -222,6 +243,17 @@ class Journal(QMainWindow):
             activity_type = "started" if self.activity_start.isChecked() else "finished"
             entry = f"{time_str} {activity_type} {entry_combo}"
         
+        elif entry_type == "Discomfort":
+                if not entry_combo:
+                    return
+                activity_type = "started" if self.activity_start.isChecked() else "finished"
+                if self.rating_1.isChecked():
+                    entry = f"{time_str} {activity_type} having {entry_combo} rating: 1"
+                elif self.rating_2.isChecked():
+                    entry = f"{time_str} {activity_type} having {entry_combo} rating 2"
+                else:
+                    entry = f"{time_str} {activity_type} having {entry_combo} rating 3"
+
         else:
             if not entry_combo:
                 return
@@ -232,8 +264,6 @@ class Journal(QMainWindow):
                 entry = f"{time_str} ate {entry_combo}"
             elif entry_type == "Medication":
                 entry = f"{time_str} took medication - {entry_combo}"
-            elif entry_type == "Discomfort":
-                entry = f"{time_str} felt {entry_combo}"
             else:
                 return
         
@@ -241,6 +271,10 @@ class Journal(QMainWindow):
         if not current_text.strip():
             date_str = self.date_edit.date().toString("dd-MM-yyyy")
             current_text = f"Date: {date_str}\n"
+
+        else:
+            if not current_text.endswith("\n"):
+                current_text += "\n"
 
         update_text = current_text + entry + "\n"
         self.preview_text.setPlainText(update_text)

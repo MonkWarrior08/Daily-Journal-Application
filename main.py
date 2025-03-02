@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QDateEdit, QComboBox, QRadioButton,
                                QFrame, QTextEdit, QSplitter)
 from PySide6.QtCore import Qt, QTime, QDate
-from mutli import MultiDialogue
+from multi import MultiDialogue
 
 
 class Journal(QMainWindow):

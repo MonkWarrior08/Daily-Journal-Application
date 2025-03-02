@@ -1,10 +1,10 @@
 import sys
+import os
 from datetime import datetime
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QHBoxLayout, QLabel, QPushButton, QTimeEdit,
                                QDateEdit, QComboBox, QRadioButton,
-                               QFrame, QListWidget, QAbstractItemView, QDialog,
-                               QDialogButtonBox, QTextEdit, QSplitter)
+                               QFrame, QTextEdit, QSplitter)
 from PySide6.QtCore import Qt, QTime, QDate
 from mutli import MultiDialogue
 
@@ -149,10 +149,44 @@ class Journal(QMainWindow):
     def current_time(self):
         self.time_edit.setTime(QTime.currentTime())
 
-    def load_journal(self):
 
-        pass
+    def get_journal(self, date=None):
+        if not date:
+            date = self.date_edit.date().toString("dd-MM-yyyy")
+        else:
+            date = date.toString("dd-MM-yyyy")
+
+        if not os.path.exists("Journal"):
+            os.makedirs("Journal")
+
+        return os.path.join("Journal", f"{date}.txt")
     
+    def load_journal(self):
+        filename = self.get_journal(self.date_edit.date())
+        self.preview_text.clear()
+        self.note_txt.clear()
+
+        if os.path.exists(filename):
+            with open(filename, 'r') as file:
+                content = file.read()
+
+            # check if Notes: section exist
+            if "Notes:" in content:
+                parts = content.split("Notes:", 1) #split between journal and notes. 
+                journal_entry = parts[0].strip()
+                notes = parts[1].strip()
+
+                self.preview_text.setPlainText(journal_entry)
+                self.note_txt.setPlainText(notes)
+            
+            else:
+                self.preview_text.setPlainText(content)
+
+        else: #if empty, add date header
+            date_str = self.date_edit.date().toString("dd-MM-yyyy")
+            header_date = f"Date: {date_str}\n"
+            self.preview_text.setPlainText(header_date)
+
     def update_options(self, type):
         self.entry_combo.clear()
         self.entry_combo.addItems(self.type_options[type])
@@ -174,12 +208,72 @@ class Journal(QMainWindow):
                 self.entry_combo.setCurrentText(", ".join(select_items))
 
     def add_entry(self):
-        pass
+        time_str = self.time_edit.time().toString("h:mma").lower()
+        entry_type = self.type.currentText()
+        entry_combo = self.entry_combo.currentText().strip()
 
-    def save_notes():
-        pass
+        if entry_type == "Wake up":
+            entry = f"{time_str} woke up"
+        
+        elif entry_type == "Activity":
+            if not entry_combo:
+                return
+            
+            activity_type = "started" if self.activity_start.isChecked() else "finished"
+            entry = f"{time_str} {activity_type} {entry_combo}"
+        
+        else:
+            if not entry_combo:
+                return
+            
+            if entry_type == "Supplement":
+                entry = f"{time_str} took {entry_combo}" 
+            elif entry_type == "Food":
+                entry = f"{time_str} ate {entry_combo}"
+            elif entry_type == "Medication":
+                entry = f"{time_str} took medication - {entry_combo}"
+            elif entry_type == "Discomfort":
+                entry = f"{time_str} felt {entry_combo}"
+            else:
+                return
+        
+        current_text = self.preview_text.toPlainText()
+        if not current_text.strip():
+            date_str = self.date_edit.date().toString("dd-MM-yyyy")
+            current_text = f"Date: {date_str}\n"
 
+        update_text = current_text + entry + "\n"
+        self.preview_text.setPlainText(update_text)
 
+        self.save_journal()
+
+        self.entry_combo.setCurrentText("")
+        self.current_time()            
+    
+
+    def save_notes(self):
+        notes_content = self.note_txt.toPlainText().strip()
+        self.save_journal(notes_content)
+
+    def save_journal(self, notes_content=None):
+        filename = self.get_journal(self.date_edit.date())
+
+        journal_content = self.preview_text.toPlainText()
+
+        if notes_content is None:
+            notes_content = self.note_txt.toPlainText().strip()
+        
+        if notes_content:
+            full_content = f"{journal_content.rstrip()}\n\nNotes: {notes_content}"
+        else:
+            full_content = journal_content
+
+        with open(filename, 'w') as file:
+            file.write(full_content)
+
+    def closeEvent(self, event):
+        self.save_journal()
+        super().closeEvent(event)
     
     
 

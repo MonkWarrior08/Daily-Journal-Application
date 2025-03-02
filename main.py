@@ -280,8 +280,6 @@ class Journal(QMainWindow):
         self.preview_text.setPlainText(update_text)
 
         self.save_journal()
-
-        self.entry_combo.setCurrentText("")
         self.current_time()            
     
 

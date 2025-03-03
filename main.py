@@ -50,7 +50,7 @@ class Journal(QMainWindow):
         type_layout = QHBoxLayout()
         type_label = QLabel('Type:')
         self.type = QComboBox()
-        self.type.addItems(["Wake up","Food","Activity","Supplement","Discomfort","Medication"])
+        self.type.addItems(["Daily", "Food", "Activity", "Supplement", "Discomfort", "Medication"])
         self.type.currentTextChanged.connect(self.update_options)
 
         type_layout.addWidget(type_label)
@@ -122,7 +122,7 @@ class Journal(QMainWindow):
         self.entry_combo.setEditable(False) # entry not editable
         self.entry_combo.setMinimumWidth(300)
 
-        # multi-select for supplement
+        # multi-select for supplement and food
         self.multi_select = QPushButton("select(multi)")
         self.multi_select.clicked.connect(self.open_multi_select)
         self.multi_select.setVisible(True)
@@ -175,7 +175,7 @@ class Journal(QMainWindow):
 
         # type options
         self.type_options = {
-            "Wake up": [],
+            "Daily": ["Woke up", "poop"],
             "Food": ["fish", "dumplings", "ginger", "plum", "pelimini"],
             "Activity": ["run", "stretch", "ice bath", "walk"],
             "Supplement": [
@@ -239,8 +239,8 @@ class Journal(QMainWindow):
         except:
             pass
 
-        self.multi_select.setVisible(type == "Supplement")
-        self.entry_combo.setEditable(type == "Supplement")
+        self.multi_select.setVisible(type == "Supplement" or type == "Food")
+        self.entry_combo.setEditable(type == "Supplement" or type == "Food")
         self.activity_frame.setVisible(type == "Activity" or type == "Discomfort")
         self.rating_frame.setVisible(type == "Discomfort")
         
@@ -257,10 +257,11 @@ class Journal(QMainWindow):
         self.dosage_frame.setVisible(medication == "Dexamphetamine")
 
     def open_multi_select(self):
+        current_type = self.type.currentText()
         dialog = MultiDialogue(
             self,
-            options=self.type_options["Supplement"],
-            title="Select Supplements"
+            options=self.type_options[current_type],
+            title="Select {current_type}"
         )
         if dialog.exec():
             select_items = dialog.get_items()
@@ -273,8 +274,8 @@ class Journal(QMainWindow):
         entry_type = self.type.currentText()
         entry_combo = self.entry_combo.currentText().strip()
 
-        if entry_type == "Wake up":
-            entry = f"{time_str} woke up"
+        if entry_type == "Daily":
+            entry = f"{time_str} {entry_combo}"
         
         elif entry_type == "Activity":
             if not entry_combo:
@@ -284,15 +285,15 @@ class Journal(QMainWindow):
             entry = f"{time_str} {activity_type} {entry_combo}"
         
         elif entry_type == "Discomfort":
-                if not entry_combo:
-                    return
-                activity_type = "started" if self.activity_start.isChecked() else "finished"
-                if self.rating_1.isChecked():
-                    entry = f"{time_str} {activity_type} having {entry_combo} rating: 1"
-                elif self.rating_2.isChecked():
-                    entry = f"{time_str} {activity_type} having {entry_combo} rating 2"
-                else:
-                    entry = f"{time_str} {activity_type} having {entry_combo} rating 3"
+            if not entry_combo:
+                return
+            activity_type = "started" if self.activity_start.isChecked() else "finished"
+            if self.rating_1.isChecked():
+                entry = f"{time_str} {activity_type} having {entry_combo} rating: 1"
+            elif self.rating_2.isChecked():
+                entry = f"{time_str} {activity_type} having {entry_combo} rating 2"
+            else:
+                entry = f"{time_str} {activity_type} having {entry_combo} rating 3"
 
         else:
             if not entry_combo:

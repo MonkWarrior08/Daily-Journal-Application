@@ -1,8 +1,4 @@
-from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
-                               QHBoxLayout, QLabel, QPushButton, QTimeEdit,
-                               QDateEdit, QComboBox, QRadioButton,
-                               QFrame, QListWidget, QAbstractItemView, QDialog,
-                               QDialogButtonBox)
+from PySide6.QtWidgets import QVBoxLayout, QListWidget, QAbstractItemView, QDialog, QDialogButtonBox
 
 class MultiDialogue(QDialog):
     def __init__(self, parent=None, options=None, title="Select"):

@@ -66,12 +66,12 @@ class Journal(QMainWindow):
         self.activity_end = QRadioButton("End")
         self.activity_start.setChecked(True) # default as "Start"
 
-
         activity_layout.addWidget(activity_label)
         activity_layout.addWidget(self.activity_start)
         activity_layout.addWidget(self.activity_end)
         activity_layout.addStretch()
 
+        # rating section
         rating_frame = QFrame()
         rating_layout = QHBoxLayout(rating_frame)
         rate_label = QLabel("Rating:")
@@ -87,6 +87,7 @@ class Journal(QMainWindow):
         rating_layout.addWidget(self.rating_3)
         rating_layout.addStretch()
 
+        # dosage section
         dosage_frame = QFrame()
         dosage_layout = QHBoxLayout(dosage_frame)
         dosage_label = QLabel("Dosage:")
@@ -100,6 +101,7 @@ class Journal(QMainWindow):
         dosage_layout.addWidget(self.dosage2)
         dosage_layout.addStretch()
 
+        # setvisible and main layout to activity, rating and dosage
         activity_frame.setVisible(False)
         self.activity_frame = activity_frame
         main_layout.addWidget(activity_frame)
@@ -174,9 +176,12 @@ class Journal(QMainWindow):
         # type options
         self.type_options = {
             "Wake up": [],
-            "Food": ["fish", "dumplings", "ginger", "plum"],
+            "Food": ["fish", "dumplings", "ginger", "plum", "pelimini"],
             "Activity": ["run", "stretch", "ice bath", "walk"],
-            "Supplement": ["usual(2 Ashwagandha, 1 Alpha-GPC, Methyl-Folate, p5p, NAC, L-theanine, Bacopa Monniery)", "L-theanine", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp & L-tryptophan"],
+            "Supplement": [
+                "usual(2 Ashwagandha, 1 Alpha-GPC, Methyl-Folate, p5p, NAC, L-theanine, Bacopa Monniery)",
+                "L-theanine", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp & L-tryptophan",
+                "slippery elm"],
             "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety"],
             "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine", "Accutane"]
         }

@@ -174,10 +174,10 @@ class Journal(QMainWindow):
         # type options
         self.type_options = {
             "Wake up": [],
-            "Food": ["fish", "dumplings"],
+            "Food": ["fish", "dumplings", "ginger", "plum"],
             "Activity": ["run", "stretch", "ice bath", "walk"],
-            "Supplement": ["usual(2 Ashwagandha, 1 Alpha-GPC, Methyl-Folate, p5p, NAC)", "L-theanine", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp and L-tryptophan"],
-            "Discomfort": ["upper-abdominal pain", "testicular pain"],
+            "Supplement": ["usual(2 Ashwagandha, 1 Alpha-GPC, Methyl-Folate, p5p, NAC, L-theanine, Bacopa Monniery)", "L-theanine", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp & L-tryptophan"],
+            "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety"],
             "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine", "Accutane"]
         }
         # initialize current options

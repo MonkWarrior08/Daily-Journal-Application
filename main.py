@@ -87,6 +87,19 @@ class Journal(QMainWindow):
         rating_layout.addWidget(self.rating_3)
         rating_layout.addStretch()
 
+        dosage_frame = QFrame()
+        dosage_layout = QHBoxLayout(dosage_frame)
+        dosage_label = QLabel("Dosage:")
+
+        self.dosage1 = QRadioButton("5")
+        self.dosage2= QRadioButton("15")
+        self.dosage1.setChecked(True)
+
+        dosage_layout.addWidget(dosage_label)
+        dosage_layout.addWidget(self.dosage1)
+        dosage_layout.addWidget(self.dosage2)
+        dosage_layout.addStretch()
+
         activity_frame.setVisible(False)
         self.activity_frame = activity_frame
         main_layout.addWidget(activity_frame)
@@ -94,6 +107,10 @@ class Journal(QMainWindow):
         rating_frame.setVisible(False)
         self.rating_frame = rating_frame
         main_layout.addWidget(rating_frame)
+
+        dosage_frame.setVisible(False)
+        self.dosage_frame = dosage_frame
+        main_layout.addWidget(dosage_frame)
 
         # entry section
         content_layout = QHBoxLayout()
@@ -211,10 +228,28 @@ class Journal(QMainWindow):
         self.entry_combo.clear()
         self.entry_combo.addItems(self.type_options[type])
 
+        # Disconnect any existing connections to prevent multiple signals
+        try:
+            self.entry_combo.currentTextChanged.disconnect()
+        except:
+            pass
+
         self.multi_select.setVisible(type == "Supplement")
         self.entry_combo.setEditable(type == "Supplement")
         self.activity_frame.setVisible(type == "Activity" or type == "Discomfort")
         self.rating_frame.setVisible(type == "Discomfort")
+        
+        # Hide dosage frame by default
+        self.dosage_frame.setVisible(False)
+        
+        # Show dosage frame when Dexamphetamine is selected
+        if type == "Medication":
+            self.entry_combo.currentTextChanged.connect(self.handle_medication_change)
+            # Check initial value
+            self.handle_medication_change(self.entry_combo.currentText())
+
+    def handle_medication_change(self, medication):
+        self.dosage_frame.setVisible(medication == "Dexamphetamine")
 
     def open_multi_select(self):
         dialog = MultiDialogue(
@@ -263,7 +298,11 @@ class Journal(QMainWindow):
             elif entry_type == "Food":
                 entry = f"{time_str} ate {entry_combo}"
             elif entry_type == "Medication":
-                entry = f"{time_str} took medication - {entry_combo}"
+                if entry_combo == "Dexamphetamine":
+                    dosage = "5mg" if self.dosage1.isChecked() else "15mg"
+                    entry = f"{time_str} took medication - {entry_combo} ({dosage})"
+                else:
+                    entry = f"{time_str} took medication - {entry_combo}"
             else:
                 return
         

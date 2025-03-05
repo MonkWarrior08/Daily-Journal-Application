@@ -179,10 +179,10 @@ class Journal(QMainWindow):
             "Food": ["fish", "dumplings", "ginger", "plum", "pelimini"],
             "Activity": ["run", "stretch", "ice bath", "walk"],
             "Supplement": [
-                "usual(2 Ashwagandha, 1 Alpha-GPC, Methyl-Folate, p5p, NAC, L-theanine, Bacopa Monniery)",
+                "2 Ashwagandha, 1 Alpha-GPC, Methyl-Folate, p5p, NAC)",
                 "L-theanine", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp & L-tryptophan",
-                "slippery elm"],
-            "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety"],
+                "slippery elm", "zinc", "lecithin"],
+            "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety", "tongue reaction"],
             "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine", "Accutane"]
         }
         # initialize current options

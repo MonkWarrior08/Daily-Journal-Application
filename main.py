@@ -79,6 +79,7 @@ class Journal(QMainWindow):
         self.rating_1 = QRadioButton("1")
         self.rating_2 = QRadioButton("2")
         self.rating_3 = QRadioButton("3")
+        self.rating_4 = QRadioButton("4")
         self.rating_1.setChecked(True)
 
         rating_layout.addWidget(rate_label)
@@ -147,10 +148,14 @@ class Journal(QMainWindow):
         preview_layout = QVBoxLayout(preview)
         preview_label = QLabel("Journal")
         self.preview_text = QTextEdit()
-        self.preview_text.setReadOnly(True)
+    
+        # save button for preview edits
+        self.preview_save_btn = QPushButton("Save edit")
+        self.preview_save_btn.clicked.connect(self.save_preview)
 
         preview_layout.addWidget(preview_label)
         preview_layout.addWidget(self.preview_text)
+        preview_layout.addWidget(self.preview_save_btn)
         splitter.addWidget(preview)
 
         # note section
@@ -176,17 +181,18 @@ class Journal(QMainWindow):
         # type options
         self.type_options = {
             "Daily": ["Woke up", "poop"],
-            "Food": ["fish", "dumplings", "ginger", "plum", "pelimini"],
+            "Food": ["fish", "dumplings", "ginger", "plum", "pelimini", "olive paste", "cumin", "olive oil", "spinash", "pizza"],
             "Activity": ["run", "stretch", "ice bath", "walk"],
             "Supplement": [
-                "2 Ashwagandha, 1 Alpha-GPC, Methyl-Folate, p5p, NAC)",
+                "2 Ashwagandha, 1 Alpha-GPC, Methyl-Folate, NAC",
                 "L-theanine", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp & L-tryptophan",
-                "slippery elm", "zinc", "lecithin"],
+                "slippery elm", "zinc", "lecithin", "p5p"],
             "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety", "tongue reaction"],
             "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine", "Accutane"]
         }
         # initialize current options
         self.update_options(self.type.currentText())
+    
 
     def current_time(self):
         self.time_edit.setTime(QTime.currentTime())
@@ -292,8 +298,10 @@ class Journal(QMainWindow):
                 entry = f"{time_str} {activity_type} having {entry_combo} rating: 1"
             elif self.rating_2.isChecked():
                 entry = f"{time_str} {activity_type} having {entry_combo} rating 2"
-            else:
+            elif self.rating_3.isChecked():
                 entry = f"{time_str} {activity_type} having {entry_combo} rating 3"
+            else:
+                entry = f"{time_str} {activity_type} having {entry_combo} rating 4"
 
         else:
             if not entry_combo:
@@ -326,8 +334,10 @@ class Journal(QMainWindow):
 
         self.save_journal()
         self.current_time()            
-    
 
+    def save_preview(self):
+        self.save_journal()
+    
     def save_notes(self):
         notes_content = self.note_txt.toPlainText().strip()
         self.save_journal(notes_content)

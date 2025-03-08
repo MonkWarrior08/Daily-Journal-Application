@@ -33,7 +33,7 @@ A simple, elegant journal application built with PySide6 that allows you to trac
 
 ## Screenshots
 
-*[Screenshots to be added]*
+
 
 ## Requirements
 

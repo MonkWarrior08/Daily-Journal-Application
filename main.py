@@ -86,6 +86,7 @@ class Journal(QMainWindow):
         rating_layout.addWidget(self.rating_1)
         rating_layout.addWidget(self.rating_2)
         rating_layout.addWidget(self.rating_3)
+        rating_layout.addWidget(self.rating_4)
         rating_layout.addStretch()
 
         # dosage section
@@ -186,7 +187,7 @@ class Journal(QMainWindow):
             "Supplement": [
                 "2 Ashwagandha, 1 Alpha-GPC, Methyl-Folate, NAC",
                 "L-theanine", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp & L-tryptophan",
-                "slippery elm", "zinc", "lecithin", "p5p"],
+                "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate"],
             "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety", "tongue reaction"],
             "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine", "Accutane"]
         }

@@ -95,12 +95,14 @@ class Journal(QMainWindow):
         dosage_label = QLabel("Dosage:")
 
         self.dosage1 = QRadioButton("5")
-        self.dosage2= QRadioButton("15")
+        self.dosage2 = QRadioButton("10")
+        self.dosage3 = QRadioButton("15")
         self.dosage1.setChecked(True)
 
         dosage_layout.addWidget(dosage_label)
         dosage_layout.addWidget(self.dosage1)
         dosage_layout.addWidget(self.dosage2)
+        dosage_layout.addWidget(self.dosage3)
         dosage_layout.addStretch()
 
         # setvisible and main layout to activity, rating and dosage
@@ -182,13 +184,12 @@ class Journal(QMainWindow):
         # type options
         self.type_options = {
             "Daily": ["Woke up", "poop"],
-            "Food": ["fish", "dumplings", "ginger", "plum", "pelimini", "olive paste", "cumin", "olive oil", "spinash", "pizza"],
+            "Food": ["fish", "dumplings", "ginger", "plum", "pelimini", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal"],
             "Activity": ["run", "stretch", "ice bath", "walk"],
             "Supplement": [
-                "2 Ashwagandha, 1 Alpha-GPC, Methyl-Folate, NAC",
-                "L-theanine", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp & L-tryptophan",
-                "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate"],
-            "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety", "tongue reaction"],
+                "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp", "L-tryptophan",
+                "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate", "vit d", "aniracetam"],
+            "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety", "tongue reaction", "fatigue"],
             "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine", "Accutane"]
         }
         # initialize current options
@@ -314,8 +315,12 @@ class Journal(QMainWindow):
                 entry = f"{time_str} ate {entry_combo}"
             elif entry_type == "Medication":
                 if entry_combo == "Dexamphetamine":
-                    dosage = "5mg" if self.dosage1.isChecked() else "15mg"
-                    entry = f"{time_str} took medication - {entry_combo} ({dosage})"
+                    if self.dosage1.isChecked():
+                        entry = f"{time_str} took medication - {entry_combo} (5mg)"
+                    elif self.dosage2.isChecked():
+                        entry = f"{time_str} took medication - {entry_combo} (10mg)"
+                    else:
+                        entry = f"{time_str} took medication - {entry_combo} (15mg)"
                 else:
                     entry = f"{time_str} took medication - {entry_combo}"
             else:

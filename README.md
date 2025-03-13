@@ -33,7 +33,7 @@ A simple, elegant journal application built with PySide6 that allows you to trac
 
 ## Screenshots
 
-
+<img width="592" alt="Screenshot 2025-03-08 at 2 08 56 PM" src="https://github.com/user-attachments/assets/64b41a20-a5f3-458e-a306-6b1ef3dd7988" />
 
 ## Requirements
 
@@ -45,8 +45,8 @@ A simple, elegant journal application built with PySide6 that allows you to trac
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/daily-journal-app.git
-   cd daily-journal-app
+   git clone https://github.com/MonkWarrior08/Daily-Journal-Application.git
+   cd Daily-Journal-Application
    ```
 
 2. Install the required dependencies:

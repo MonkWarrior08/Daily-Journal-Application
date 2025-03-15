@@ -184,11 +184,13 @@ class Journal(QMainWindow):
         # type options
         self.type_options = {
             "Daily": ["Woke up", "poop"],
-            "Food": ["fish", "dumplings", "ginger", "plum", "pelimini", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal"],
+            "Food": ["fish", "dumplings", "ginger", "plum", "pelimini", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal",
+                     "peanut butter"],
             "Activity": ["run", "stretch", "ice bath", "walk"],
             "Supplement": [
                 "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp", "L-tryptophan",
-                "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate", "vit d", "aniracetam"],
+                "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate", "vit d", "aniracetam", "digestive enzyme",
+                 "fish oil"],
             "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety", "tongue reaction", "fatigue"],
             "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine", "Accutane"]
         }

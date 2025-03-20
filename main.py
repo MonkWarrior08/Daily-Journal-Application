@@ -185,7 +185,8 @@ class Journal(QMainWindow):
         self.type_options = {
             "Daily": ["Woke up", "poop"],
             "Food": ["fish", "dumplings", "ginger", "plum", "pelimini", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal",
-                     "peanut butter", "chips"],
+                     "peanut butter", "chips", "chips(sweet potatoes)", "tuna and beans"],
+            "Drink": ["green tea", "coconut water", "fruit juice", "kefir", "milk"],
             "Activity": ["run", "stretch", "ice bath", "walk"],
             "Supplement": [
                 "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp", "L-tryptophan",
@@ -286,6 +287,9 @@ class Journal(QMainWindow):
 
         if entry_type == "Daily":
             entry = f"{time_str} {entry_combo}"
+        
+        elif entry_type == "Drink":
+            entry = f"{time_str} drink {entry_combo}"
         
         elif entry_type == "Activity":
             if not entry_combo:

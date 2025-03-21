@@ -50,7 +50,7 @@ class Journal(QMainWindow):
         type_layout = QHBoxLayout()
         type_label = QLabel('Type:')
         self.type = QComboBox()
-        self.type.addItems(["Daily", "Food", "Activity", "Supplement", "Discomfort", "Medication"])
+        self.type.addItems(["Daily", "Food", "Drink", "Activity", "Supplement", "Discomfort", "Medication"])
         self.type.currentTextChanged.connect(self.update_options)
 
         type_layout.addWidget(type_label)
@@ -288,9 +288,6 @@ class Journal(QMainWindow):
         if entry_type == "Daily":
             entry = f"{time_str} {entry_combo}"
         
-        elif entry_type == "Drink":
-            entry = f"{time_str} drink {entry_combo}"
-        
         elif entry_type == "Activity":
             if not entry_combo:
                 return
@@ -317,6 +314,8 @@ class Journal(QMainWindow):
             
             if entry_type == "Supplement":
                 entry = f"{time_str} took {entry_combo}" 
+            elif entry_type == "Drink":
+                entry = f"{time_str} drink {entry_combo}"
             elif entry_type == "Food":
                 entry = f"{time_str} ate {entry_combo}"
             elif entry_type == "Medication":

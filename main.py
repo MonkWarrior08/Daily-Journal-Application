@@ -191,7 +191,7 @@ class Journal(QMainWindow):
             "Supplement": [
                 "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp", "L-tryptophan",
                 "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate", "vit d", "aniracetam", "digestive enzyme",
-                 "fish oil", "john wort"],
+                 "fish oil", "john wort", "panadol", "bcaa"],
             "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety", "fatigue"],
             "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine", "Accutane"]
         }

@@ -185,13 +185,13 @@ class Journal(QMainWindow):
         self.type_options = {
             "Daily": ["Woke up", "poop"],
             "Food": ["fish", "dumplings", "ginger", "plum", "pelimini", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal",
-                     "peanut butter", "chips", "chips(sweet potatoes)", "tuna and beans", "chocolate", "orange", "yogurt(with cereal)"],
+                     "peanut butter", "chips", "chips(sweet potatoes)", "tuna and beans", "chocolate", "orange", "yogurt(with cereal)", "berries"],
             "Drink": ["green tea", "coconut water", "fruit juice", "kefir", "milk"],
             "Activity": ["run", "stretch", "ice bath", "walk"],
             "Supplement": [
                 "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp", "L-tryptophan",
                 "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate", "vit d", "aniracetam", "digestive enzyme",
-                 "fish oil", "john wort", "panadol", "bcaa"],
+                 "fish oil", "john wort", "panadol", "bcaa", "bismuth potassium", "nicotine", "silymarine"],
             "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety", "fatigue"],
             "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine", "Accutane"]
         }

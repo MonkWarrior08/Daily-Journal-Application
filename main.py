@@ -191,9 +191,9 @@ class Journal(QMainWindow):
             "Supplement": [
                 "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp", "L-tryptophan",
                 "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate", "vit d", "aniracetam", "digestive enzyme",
-                 "fish oil", "john wort", "panadol", "bcaa", "bismuth potassium", "nicotine", "silymarine"],
+                 "fish oil", "john wort", "panadol", "bcaa", "bismuth potassium", "nicotine", "silymarine", "magnesium"],
             "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety", "fatigue"],
-            "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine", "Accutane"]
+            "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine", "Accutane", "Amlodipine"]
         }
         # initialize current options
         self.update_options(self.type.currentText())

@@ -185,7 +185,7 @@ class Journal(QMainWindow):
         self.type_options = {
             "Daily": ["Woke up", "poop"],
             "Food": ["fish", "dumplings", "ginger", "plum", "pelimini", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal",
-                     "peanut butter", "chips", "chips(sweet potatoes)", "tuna and beans", "chocolate", "orange", "yogurt(with cereal)", "berries"],
+                     "peanut butter", "chips", "chips(sweet potatoes)", "tuna and beans", "chocolate", "orange", "yogurt(with cereal)", "berries", "chips(corn)"],
             "Drink": ["green tea", "coconut water", "fruit juice", "kefir", "milk"],
             "Activity": ["run", "stretch", "ice bath", "walk"],
             "Supplement": [

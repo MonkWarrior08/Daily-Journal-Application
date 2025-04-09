@@ -185,7 +185,7 @@ class Journal(QMainWindow):
         self.type_options = {
             "Daily": ["Woke up", "poop"],
             "Food": ["fish", "dumplings", "ginger", "plum", "pelimini", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal",
-                     "peanut butter", "chips", "chips(sweet potatoes)", "tuna and beans", "chocolate", "orange", "yogurt(with cereal)", "berries", "chips(corn)", "steak with special sauce", "yogurt"],
+                     "peanut butter", "chips", "chips(sweet potatoes)", "tuna and beans", "chocolate", "orange", "yogurt(with cereal)", "berries", "chips(corn)", "steak and noodles with special sauce", "yogurt"],
             "Drink": ["green tea", "coconut water", "fruit juice", "kefir", "milk"],
             "Activity": ["run", "ice bath", "walk"],
             "Supplement": [
@@ -193,7 +193,7 @@ class Journal(QMainWindow):
                 "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate", "vit d", "aniracetam", "digestive enzyme",
                  "fish oil", "john wort", "panadol", "bcaa", "bismuth potassium", "creatine", "silymarine", "magnesium", "moringa", "gotu kola"],
             "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety", "fatigue"],
-            "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine", "Accutane"]
+            "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine(half)", "Accutane"]
         }
         # initialize current options
         self.update_options(self.type.currentText())

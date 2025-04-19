@@ -186,14 +186,14 @@ class Journal(QMainWindow):
             "Daily": ["Woke up", "poop"],
             "Food": ["fish", "dumplings", "ginger", "plum", "pelimini", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal",
                      "peanut butter", "chips", "chips(sweet potatoes)", "tuna and beans", "chocolate", "orange", "yogurt(with cereal)", "berries", "chips(corn)", "steak and noodles with special sauce", "yogurt", "tuna"],
-            "Drink": ["green tea", "coconut water", "fruit juice", "kefir", "milk"],
+            "Drink": ["green tea", "coconut water", "fruit juice", "kefir", "milk", "protein powder"],
             "Activity": ["run", "ice bath", "walk"],
             "Supplement": [
                 "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp", "L-tryptophan",
                 "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate", "vit d", "aniracetam", "digestive enzyme",
-                 "fish oil", "john wort", "panadol", "bcaa", "bismuth potassium", "creatine", "silymarine", "magnesium", "moringa", "gotu kola"],
+                 "fish oil", "john wort", "panadol", "bcaa", "bismuth potassium", "creatine", "silymarine", "magnesium", "moringa", "gotu kola", "benfotiamine", "oxytocin", "CBD oil"],
             "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety", "fatigue"],
-            "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine(half)", "Accutane", "Candesartan"]
+            "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine", "Accutane", "Candesartan"]
         }
         # initialize current options
         self.update_options(self.type.currentText())

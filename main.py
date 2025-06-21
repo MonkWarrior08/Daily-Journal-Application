@@ -195,7 +195,7 @@ class Journal(QMainWindow):
                  "fish oil", "john wort", "panadol", "bcaa", "bismuth potassium", "creatine", "silymarine", "magnesium", "moringa",
                  "gotu kola", "benfotiamine", "oxytocin", "CBD oil", "reishi", "rutin", "quercetin", "Holy basil"],
             "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety", "fatigue", "tongue reaction"],
-            "Medication": ["Dexamphetamine", "Vyvanse (70mg)", "Lexapro", "Guanfacine", "Accutane", "Candesartan", "LDN"]
+            "Medication": ["Dexamphetamine", "Vyvanse (70mg)", "Lexapro", "Guanfacine", "Accutane", "Candesartan", "LDN", "Metoprolol (1/2)"]
         }
         # initialize current options
         self.update_options(self.type.currentText())

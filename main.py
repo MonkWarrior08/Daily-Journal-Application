@@ -185,16 +185,16 @@ class Journal(QMainWindow):
         self.type_options = {
             "Daily": ["Woke up", "poop"],
             "Food": ["fish", "dumplings", "ginger", "plum", "pelimini", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal",
-                     "peanut butter", "chips", "chips(sweet potatoes)", "tuna and beans", "chocolate", "orange", "yogurt(with cereal)", "berries", "chips(corn)", "steak and noodles with special sauce", "yogurt", "tuna"],
+                     "peanut butter", "chips", "chips(sweet potatoes)", "tuna and beans", "chocolate", "orange", "yogurt(with cereal and berries), creatine", "strawberries", "chips(corn)", "steak, noodles, salad with special sauce"],
             "Drink": ["green tea", "coconut water", "fruit juice", "kefir", "milk", "protein powder"],
             "Activity": ["walk", "ice bath", "run", "tACS", "tDCS", "RLT"],
             "Supplement": [
                 "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp", "L-tryptophan",
                 "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate", "vit d", "aniracetam", "digestive enzyme",
                  "fish oil", "john wort", "panadol", "bcaa", "bismuth potassium", "creatine", "silymarine", "magnesium", "moringa",
-                 "gotu kola", "benfotiamine", "oxytocin", "CBD oil", "reishi", "rutin", "quercetin"],
+                 "gotu kola", "benfotiamine", "oxytocin", "CBD oil", "reishi", "rutin", "quercetin", "Holy basil"],
             "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety", "fatigue", "tongue reaction"],
-            "Medication": ["Dexamphetamine", "Lexapro", "Guanfacine", "Accutane", "Candesartan", "LDN"]
+            "Medication": ["Dexamphetamine", "Vyvanse (70mg)", "Lexapro", "Guanfacine", "Accutane", "Candesartan", "LDN"]
         }
         # initialize current options
         self.update_options(self.type.currentText())

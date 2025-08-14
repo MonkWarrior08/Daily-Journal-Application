@@ -194,20 +194,36 @@ class Journal(QMainWindow):
         preview_layout.addWidget(self.preview_save_btn)
         splitter.addWidget(preview)
 
-        # note section
+        # note and changes section
         note = QWidget()
         note_layout = QVBoxLayout(note)
+
+        # Notes header
         note_header_layout = QHBoxLayout()
         note_label = QLabel("Notes:")
         self.note_butn = QPushButton("Save Notes")
         self.note_butn.clicked.connect(self.save_notes)
-        
         note_header_layout.addWidget(note_label)
         note_header_layout.addWidget(self.note_butn)
         note_layout.addLayout(note_header_layout)
 
+        # Notes text
         self.note_txt = QTextEdit()
         note_layout.addWidget(self.note_txt)
+
+        # Changes header
+        changes_header_layout = QHBoxLayout()
+        changes_label = QLabel("Changes:")
+        self.change_butn = QPushButton("Save Changes")
+        self.change_butn.clicked.connect(self.save_changes)
+        changes_header_layout.addWidget(changes_label)
+        changes_header_layout.addWidget(self.change_butn)
+        note_layout.addLayout(changes_header_layout)
+
+        # Changes text
+        self.change_txt = QTextEdit()
+        note_layout.addWidget(self.change_txt)
+
         splitter.addWidget(note)
 
         splitter.setSizes([300,200])
@@ -216,13 +232,18 @@ class Journal(QMainWindow):
 
         # type options
         self.type_options = {
-            "Daily": ["Woke up", "poop"],
-            "Food": ["fish", "dumplings", "ginger", "plum", "pelimini"],
+            "Daily": ["poop"],
+            "Food": ["fish", "dumplings", "ginger", "plum", "pelimini", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal",
+                     "peanut butter", "chips", "chips(sweet potatoes)", "tuna and beans", "chocolate", "orange", "yogurt(with cereal and berries), creatine",
+                    "strawberries", "chips(corn)", "steak, noodles, salad with special sauce", "salmon(oyster sauce)"],
             "Activity": ["walk", "ice bath", "run"],
             "Supplement": [
-                "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha"],
-            "Discomfort": ["upper-abdominal pain", "anxiety", "fatigue"],
-            "Medication": ["any medication"]
+                "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp", "L-tryptophan",
+                "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate", "vit d", "aniracetam", "digestive enzyme",
+                 "fish oil", "john wort", "panadol", "bcaa", "bismuth potassium", "creatine", "silymarine", "magnesium", "moringa",
+                 "gotu kola", "benfotiamine", "oxytocin", "CBD oil", "reishi", "rutin", "quercetin", "Holy basil"],
+            "Discomfort": ["upper-abdominal pain", "anxiety", "fatigue", "testicular pain"],
+            "Medication": ["Dexamphetamine", "Vyvanse (70mg)", "Lexapro", "Guanfacine", "Accutane"]
         }
         # saved multi-select stacks for Food and Supplement
         self.type_stacks = {"Food": [], "Supplement": []}
@@ -252,22 +273,47 @@ class Journal(QMainWindow):
         filename = self.get_journal(self.date_edit.date())
         self.preview_text.clear()
         self.note_txt.clear()
+        if hasattr(self, 'change_txt'):
+            self.change_txt.clear()
 
         if os.path.exists(filename):
             with open(filename, 'r') as file:
                 content = file.read()
 
-            # check if Notes: section exist
-            if "Notes:" in content:
-                parts = content.split("Notes:", 1) #split between journal and notes. 
-                journal_entry = parts[0].strip()
-                notes = parts[1].strip()
+            # Parse optional Notes: and Changes: sections
+            journal_entry = content
+            notes_text = ""
+            changes_text = ""
 
-                self.preview_text.setPlainText(journal_entry)
-                self.note_txt.setPlainText(notes)
-            
+            # find markers
+            idx_notes = content.find("Notes:")
+            idx_changes = content.find("Changes:")
+
+            # determine journal portion as content before the earliest marker (if any)
+            indices = [i for i in [idx_notes, idx_changes] if i != -1]
+            if indices:
+                first_idx = min(indices)
+                journal_entry = content[:first_idx].strip()
             else:
-                self.preview_text.setPlainText(content)
+                journal_entry = content
+
+            # extract notes text
+            if idx_notes != -1:
+                start = idx_notes + len("Notes:")
+                end = len(content) if idx_changes == -1 else idx_changes
+                notes_text = content[start:end].strip()
+
+            # extract changes text
+            if idx_changes != -1:
+                start = idx_changes + len("Changes:")
+                end = len(content)
+                changes_text = content[start:end].strip()
+
+            self.preview_text.setPlainText(journal_entry)
+            if notes_text:
+                self.note_txt.setPlainText(notes_text)
+            if changes_text and hasattr(self, 'change_txt'):
+                self.change_txt.setPlainText(changes_text)
 
         else: #if empty, add date header
             date_str = self.date_edit.date().toString("dd-MM-yyyy")
@@ -475,20 +521,28 @@ class Journal(QMainWindow):
     
     def save_notes(self):
         notes_content = self.note_txt.toPlainText().strip()
-        self.save_journal(notes_content)
+        self.save_journal(notes_content=notes_content)
 
-    def save_journal(self, notes_content=None):
+    def save_changes(self):
+        changes_content = self.change_txt.toPlainText().strip()
+        self.save_journal(changes_content=changes_content)
+
+    def save_journal(self, notes_content=None, changes_content=None):
         filename = self.get_journal(self.date_edit.date())
 
         journal_content = self.preview_text.toPlainText()
 
         if notes_content is None:
             notes_content = self.note_txt.toPlainText().strip()
-        
+        if changes_content is None and hasattr(self, 'change_txt'):
+            changes_content = self.change_txt.toPlainText().strip()
+
+        # Build full content with optional sections
+        full_content = journal_content.rstrip()
         if notes_content:
-            full_content = f"{journal_content.rstrip()}\n\nNotes: {notes_content}"
-        else:
-            full_content = journal_content
+            full_content += f"\n\nNotes: {notes_content}"
+        if changes_content:
+            full_content += f"\n\nChanges: {changes_content}"
 
         with open(filename, 'w') as file:
             file.write(full_content)

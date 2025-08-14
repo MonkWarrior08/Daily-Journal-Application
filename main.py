@@ -38,13 +38,20 @@ class Journal(QMainWindow):
         time_label = QLabel('Time:')
 
         self.time_edit = QTimeEdit(QTime.currentTime())
-        self.current_time_btn = QPushButton("Current Time")
-        self.current_time_btn.clicked.connect(self.current_time)
+        self.time_auto = QRadioButton("Automatic")
+        self.time_custom = QRadioButton("Custom")
+        self.time_auto.setChecked(True)
+        self.time_auto.toggled.connect(self.on_time_mode_changed)
+        self.time_custom.toggled.connect(self.on_time_mode_changed)
 
         time_layout.addWidget(time_label)
+        time_layout.addWidget(self.time_auto)
+        time_layout.addWidget(self.time_custom)
         time_layout.addWidget(self.time_edit)
-        time_layout.addWidget(self.current_time_btn)
         main_layout.addLayout(time_layout)
+
+        # initialize time mode (disable editor when automatic)
+        self.on_time_mode_changed()
 
         # type section
         type_layout = QHBoxLayout()
@@ -118,6 +125,28 @@ class Journal(QMainWindow):
         self.dosage_frame = dosage_frame
         main_layout.addWidget(dosage_frame)
 
+        # fish details section (only for Food -> fish)
+        fish_frame = QFrame()
+        fish_layout = QHBoxLayout(fish_frame)
+        fish_label = QLabel("Fish:")
+        self.fish_type = QComboBox()
+        self.fish_type.addItems(["basal fillet", "barramundi"])
+        qty_label = QLabel("Qty:")
+        self.fish_qty1 = QRadioButton("1")
+        self.fish_qty2 = QRadioButton("2")
+        self.fish_qty1.setChecked(True)
+
+        fish_layout.addWidget(fish_label)
+        fish_layout.addWidget(self.fish_type)
+        fish_layout.addWidget(qty_label)
+        fish_layout.addWidget(self.fish_qty1)
+        fish_layout.addWidget(self.fish_qty2)
+        fish_layout.addStretch()
+
+        fish_frame.setVisible(False)
+        self.fish_frame = fish_frame
+        main_layout.addWidget(fish_frame)
+
         # entry section
         content_layout = QHBoxLayout()
         content_label = QLabel("Entry:")
@@ -184,24 +213,23 @@ class Journal(QMainWindow):
         # type options
         self.type_options = {
             "Daily": ["Woke up", "poop"],
-            "Food": ["fish", "dumplings", "ginger", "plum", "pelimini", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal",
-                     "peanut butter", "chips", "chips(sweet potatoes)", "tuna and beans", "chocolate", "orange", "yogurt(with cereal and berries), creatine",
-                    "strawberries", "chips(corn)", "steak, noodles, salad with special sauce", "salmon(oyster sauce)"],
-            "Drink": ["green tea", "coconut water", "fruit juice", "kefir", "milk", "protein powder"],
-            "Activity": ["walk", "ice bath", "run", "tACS", "tDCS", "RLT"],
+            "Food": ["fish", "dumplings", "ginger", "plum", "pelimini"],
+            "Activity": ["walk", "ice bath", "run"],
             "Supplement": [
-                "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp", "L-tryptophan",
-                "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate", "vit d", "aniracetam", "digestive enzyme",
-                 "fish oil", "john wort", "panadol", "bcaa", "bismuth potassium", "creatine", "silymarine", "magnesium", "moringa",
-                 "gotu kola", "benfotiamine", "oxytocin", "CBD oil", "reishi", "rutin", "quercetin", "Holy basil"],
-            "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety", "fatigue", "tongue reaction"],
-            "Medication": ["Dexamphetamine", "Vyvanse (70mg)", "Lexapro", "Guanfacine", "Accutane", "Candesartan", "LDN", "Metoprolol (1/2)"]
+                "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha"],
+            "Discomfort": ["upper-abdominal pain", "anxiety", "fatigue"],
+            "Medication": ["any medication"]
         }
+        # saved multi-select stacks for Food and Supplement
+        self.type_stacks = {"Food": [], "Supplement": []}
         # initialize current options
         self.update_options(self.type.currentText())
     
 
-    def current_time(self):
+    def on_time_mode_changed(self):
+        is_custom = self.time_custom.isChecked()
+        self.time_edit.setEnabled(is_custom)
+        # initialize editor starting from current time when switching modes
         self.time_edit.setTime(QTime.currentTime())
 
 
@@ -252,22 +280,44 @@ class Journal(QMainWindow):
         except:
             pass
 
-        self.multi_select.setVisible(type == "Supplement" or type == "Food")
-        self.entry_combo.setEditable(type == "Supplement" or type == "Food")
+        is_food_or_supp = (type == "Supplement" or type == "Food")
+        self.multi_select.setVisible(is_food_or_supp)
+        self.entry_combo.setEditable(is_food_or_supp)
         self.activity_frame.setVisible(type == "Activity" or type == "Discomfort")
         self.rating_frame.setVisible(type == "Discomfort")
         
         # Hide dosage frame by default
         self.dosage_frame.setVisible(False)
+        # Hide fish frame by default
+        self.fish_frame.setVisible(False)
         
-        # Show dosage frame when Dexamphetamine is selected
-        if type == "Medication":
-            self.entry_combo.currentTextChanged.connect(self.handle_medication_change)
-            # Check initial value
-            self.handle_medication_change(self.entry_combo.currentText())
+        # Show fish details when Food -> fish
+        if type == "Food":
+            self.entry_combo.currentTextChanged.connect(self.handle_food_change)
+            self.handle_food_change(self.entry_combo.currentText())
+
+        # Append saved stacks section for Food/Supplement
+        if type in self.type_stacks and self.type_stacks[type]:
+            idx = self.entry_combo.count()
+            self.entry_combo.insertSeparator(idx)
+            self.entry_combo.addItem("Saved stacks")
+            header_index = self.entry_combo.count() - 1
+            try:
+                item = self.entry_combo.model().item(header_index)
+                if item:
+                    item.setEnabled(False)
+            except Exception:
+                pass
+            self.entry_combo.addItems(self.type_stacks[type])
 
     def handle_medication_change(self, medication):
         self.dosage_frame.setVisible(medication == "Dexamphetamine")
+
+    def handle_food_change(self, item):
+        is_fish = (self._normalize_text(item) == "fish")
+        self.fish_frame.setVisible(is_fish)
+        if is_fish:
+            self.fish_qty1.setChecked(True)
 
     def open_multi_select(self):
         current_type = self.type.currentText()
@@ -280,12 +330,33 @@ class Journal(QMainWindow):
             select_items = dialog.get_items()
             
             if select_items:
-                self.entry_combo.setCurrentText(", ".join(select_items))
+                combo_str = ", ".join(select_items)
+                self.entry_combo.setCurrentText(combo_str)
+                # save combo as stack if not already saved
+                if current_type in self.type_stacks:
+                    if not self._exists_in_list(self.type_stacks[current_type], combo_str):
+                        self.type_stacks[current_type].append(combo_str)
+                        # refresh options to show newly saved stack when relevant
+                        if self.type.currentText() == current_type:
+                            self.update_options(current_type)
 
     def add_entry(self):
-        time_str = self.time_edit.time().toString("h:mma").lower()
+        if self.time_custom.isChecked():
+            time_str = self.time_edit.time().toString("h:mma").lower()
+        else:
+            time_str = QTime.currentTime().toString("h:mma").lower()
         entry_type = self.type.currentText()
         entry_combo = self.entry_combo.currentText().strip()
+
+        # For Food/Supplement: auto-add new single item to options (case-insensitive, trimmed)
+        if entry_type in ("Food", "Supplement") and entry_combo and "," not in entry_combo:
+            if not self._exists_in_list(self.type_options[entry_type], entry_combo):
+                sanitized = entry_combo.strip()
+                self.type_options[entry_type].append(sanitized)
+                # refresh options to include the new item
+                self.update_options(entry_type)
+                # ensure current text remains what user typed
+                self.entry_combo.setCurrentText(sanitized)
 
         if entry_type == "Daily":
             entry = f"{time_str} {entry_combo}"
@@ -319,15 +390,18 @@ class Journal(QMainWindow):
             elif entry_type == "Drink":
                 entry = f"{time_str} drink {entry_combo}"
             elif entry_type == "Food":
-                entry = f"{time_str} ate {entry_combo}"
+                if entry_combo == "fish" and self.fish_frame.isVisible():
+                    fish_kind = self.fish_type.currentText()
+                    qty = 2 if self.fish_qty2.isChecked() else 1
+                    if qty == 1:
+                        entry = f"{time_str} ate fish({fish_kind})"
+                    else:
+                        entry = f"{time_str} ate {qty} fish({fish_kind})"
+                else:
+                    entry = f"{time_str} ate {entry_combo}"
             elif entry_type == "Medication":
                 if entry_combo == "Dexamphetamine":
-                    if self.dosage1.isChecked():
-                        entry = f"{time_str} took medication - {entry_combo} (5mg)"
-                    elif self.dosage2.isChecked():
-                        entry = f"{time_str} took medication - {entry_combo} (10mg)"
-                    else:
-                        entry = f"{time_str} took medication - {entry_combo} (15mg)"
+                    entry = f"{time_str} took medication - {entry_combo} (5mg)"
                 else:
                     entry = f"{time_str} took medication - {entry_combo}"
             else:
@@ -346,7 +420,18 @@ class Journal(QMainWindow):
         self.preview_text.setPlainText(update_text)
 
         self.save_journal()
-        self.current_time()            
+
+    def _normalize_text(self, text: str) -> str:
+        if text is None:
+            return ""
+        return text.casefold().strip()
+
+    def _exists_in_list(self, items, candidate: str) -> bool:
+        candidate_norm = self._normalize_text(candidate)
+        for existing in items:
+            if self._normalize_text(existing) == candidate_norm:
+                return True
+        return False
 
     def save_preview(self):
         self.save_journal()

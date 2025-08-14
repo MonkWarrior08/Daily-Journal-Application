@@ -21,15 +21,15 @@ A simple, elegant journal application built with PySide6 that allows you to trac
 
 ## Features
 
-- Record different types of entries (supplements, food, activities, etc.)
-- Automatic or manual timestamping of entries
-- Save entries to text files organized by date
-- Preview your journal entries within the application
-- Calendar date picker for viewing or creating entries for any date
-- Simple and intuitive user interface
-- Lightweight and fast performance
-- Cross-platform compatibility (Windows, macOS, Linux)
-- Dark and light theme support
+- Record different types of entries (supplements, food, activities, discomforts, medications)
+- Time modes: **Automatic** (uses current time) or **Custom** (set your own)
+- Food: fish subtype selector (e.g., basal fillet, barramundi) and quantity (1 default or 2)
+- Food/Supplement lists are editable: typing a new single item auto-adds it (case-insensitive, trims ends)
+- Multi-select for Food/Supplements, with auto-saved combinations as **Saved stacks** (and a Remove button to delete items or stacks)
+- Preview and inline editing of the daily journal with Save edit
+- Dedicated Notes and Changes sections stored with the day’s journal
+- Calendar date picker for viewing/creating entries for any date
+- Lightweight, fast, cross-platform (Windows, macOS, Linux)
 
 ## Screenshots
 
@@ -61,25 +61,33 @@ A simple, elegant journal application built with PySide6 that allows you to trac
    python main.py
    ```
 
-2. Add entries using the interface:
+2. Add entries:
    - Select a date (defaults to today)
-   - Set the time (or use the "Use Current Time" button)
+   - Choose a time mode:
+     - Automatic: current time is used and the time field is disabled
+     - Custom: the time field is enabled and initialized to the current time
    - Choose an entry type from the dropdown
-   - Enter the details in the entry field
-   - Click "Add Entry"
+   - Food specifics:
+     - If you choose fish, select fish type and quantity (1 or 2)
+   - Food/Supplement power-user features:
+     - Type a new single item to auto-add it to the list (case-insensitive, trims ends)
+     - Use select(multi) to pick several items. The combination is saved under a non-selectable “Saved stacks” header in the dropdown
+     - Use Remove to delete either a single item or a saved stack (case-insensitive match)
+   - Click Add Entry
 
-3. The entries will automatically be saved to text files in the `journals` folder with filenames like `journal_dd-MM-yyyy.txt`
+3. Edit and save:
+   - Modify the journal text in the left preview and click Save edit
+   - Add Notes and Changes in their respective editors and click their Save buttons (also saved on app close)
 
-4. To view entries for a specific date:
-   - Select the date from the calendar
-   - The entries will be displayed in the preview panel
+4. To view another date:
+   - Select the date from the calendar. The journal, Notes, and Changes will load if present
 
 ## Data Storage
 
-All journal entries are stored as plain text files in the `journals` directory, making them easy to backup, read, or process with other tools. Each day's entries are stored in a separate file with the naming convention:
+All journal entries are stored as plain text files in the `Journal` directory. Each day's entries are stored in a separate file named:
 
 ```
-journal_dd-MM-yyyy.txt
+Journal/<dd-MM-yyyy>.txt
 ```
 
 ## Example Journal Format
@@ -87,16 +95,21 @@ journal_dd-MM-yyyy.txt
 ```
 Date: 25-05-2023
 9:00am woke up
-9:30am ate 1 fish
-9:35am supplement - b-complex, ashwangandha
-11:30am activity - went for a walk
+9:30am ate fish(basal fillet)
+9:35am took vit c, L-theanine
+10:00am ate 2 fish(barramundi)
+2:15pm took medication - Dexamphetamine (5mg)
+
+Notes: felt energetic in the morning
+
+Changes: increased L-theanine to 200mg
 ```
 
 ## Customization
 
 You can customize the application by:
 
-- Adding new entry types in the settings
+- Adding new entry types in code
 - Changing the default time format
 - Modifying the journal file naming convention
 - Adjusting the UI theme

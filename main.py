@@ -159,10 +159,14 @@ class Journal(QMainWindow):
         self.multi_select = QPushButton("select(multi)")
         self.multi_select.clicked.connect(self.open_multi_select)
         self.multi_select.setVisible(True)
+        self.remove_btn = QPushButton("Remove")
+        self.remove_btn.clicked.connect(self.remove_current_entry)
+        self.remove_btn.setVisible(False)
 
         content_layout.addWidget(content_label)
         content_layout.addWidget(self.entry_combo)
         content_layout.addWidget(self.multi_select)
+        content_layout.addWidget(self.remove_btn)
         main_layout.addLayout(content_layout)
 
         # add entry button
@@ -282,6 +286,7 @@ class Journal(QMainWindow):
 
         is_food_or_supp = (type == "Supplement" or type == "Food")
         self.multi_select.setVisible(is_food_or_supp)
+        self.remove_btn.setVisible(is_food_or_supp)
         self.entry_combo.setEditable(is_food_or_supp)
         self.activity_frame.setVisible(type == "Activity" or type == "Discomfort")
         self.rating_frame.setVisible(type == "Discomfort")
@@ -298,16 +303,19 @@ class Journal(QMainWindow):
 
         # Append saved stacks section for Food/Supplement
         if type in self.type_stacks and self.type_stacks[type]:
-            idx = self.entry_combo.count()
-            self.entry_combo.insertSeparator(idx)
+            base_count = self.entry_combo.count()
+            self.entry_combo.insertSeparator(base_count)
+            self.entry_combo_stack_sep_index = base_count
             self.entry_combo.addItem("Saved stacks")
-            header_index = self.entry_combo.count() - 1
+            header_index = base_count + 1
+            self.entry_combo_stack_header_index = header_index
             try:
                 item = self.entry_combo.model().item(header_index)
                 if item:
                     item.setEnabled(False)
             except Exception:
                 pass
+            self.entry_combo_stacks_first_index = header_index + 1
             self.entry_combo.addItems(self.type_stacks[type])
 
     def handle_medication_change(self, medication):
@@ -421,6 +429,27 @@ class Journal(QMainWindow):
 
         self.save_journal()
 
+    def remove_current_entry(self):
+        current_type = self.type.currentText()
+        if current_type not in ("Food", "Supplement"):
+            return
+        idx = self.entry_combo.currentIndex()
+        text = self.entry_combo.currentText()
+        # Determine if removing a saved stack or a base item
+        stacks_first = getattr(self, 'entry_combo_stacks_first_index', None)
+        header_idx = getattr(self, 'entry_combo_stack_header_index', None)
+        if stacks_first is not None and idx >= stacks_first:
+            # remove from stacks
+            if self._remove_from_list(self.type_stacks[current_type], text):
+                self.update_options(current_type)
+        else:
+            # ignore if header somehow selected
+            if header_idx is not None and idx == header_idx:
+                return
+            # remove from base options
+            if self._remove_from_list(self.type_options[current_type], text):
+                self.update_options(current_type)
+
     def _normalize_text(self, text: str) -> str:
         if text is None:
             return ""
@@ -430,6 +459,14 @@ class Journal(QMainWindow):
         candidate_norm = self._normalize_text(candidate)
         for existing in items:
             if self._normalize_text(existing) == candidate_norm:
+                return True
+        return False
+
+    def _remove_from_list(self, items, candidate: str) -> bool:
+        candidate_norm = self._normalize_text(candidate)
+        for i, existing in enumerate(items):
+            if self._normalize_text(existing) == candidate_norm:
+                del items[i]
                 return True
         return False
 

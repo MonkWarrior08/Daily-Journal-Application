@@ -49,9 +49,9 @@ A simple, elegant journal application built with PySide6 that allows you to trac
    cd Daily-Journal-Application
    ```
 
-2. Install the required dependencies:
+2. Install the required module:
    ```bash
-   pip install -r requirements.txt
+   pip install PySide6
    ```
 
 ## Usage

@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QDateEdit, QComboBox, QRadioButton,
                                QFrame, QTextEdit, QSplitter)
 from PySide6.QtCore import Qt, QTime, QDate
-from multi import MultiDialogue
+from multi import MultiDialogue, MultiDialogueWithCounts
 
 
 class Journal(QMainWindow):
@@ -375,24 +375,58 @@ class Journal(QMainWindow):
 
     def open_multi_select(self):
         current_type = self.type.currentText()
-        dialog = MultiDialogue(
-            self,
-            options=self.type_options[current_type],
-            title="Select {current_type}"
-        )
-        if dialog.exec():
-            select_items = dialog.get_items()
+        
+        # Use MultiDialogueWithCounts for supplements, regular MultiDialogue for others
+        if current_type == "Supplement":
+            dialog = MultiDialogueWithCounts(
+                self,
+                options=self.type_options[current_type],
+                title=f"Select {current_type}"
+            )
+        else:
+            dialog = MultiDialogue(
+                self,
+                options=self.type_options[current_type],
+                title=f"Select {current_type}"
+            )
             
-            if select_items:
-                combo_str = ", ".join(select_items)
-                self.entry_combo.setCurrentText(combo_str)
-                # save combo as stack if not already saved
-                if current_type in self.type_stacks:
-                    if not self._exists_in_list(self.type_stacks[current_type], combo_str):
-                        self.type_stacks[current_type].append(combo_str)
-                        # refresh options to show newly saved stack when relevant
-                        if self.type.currentText() == current_type:
-                            self.update_options(current_type)
+        if dialog.exec():
+            if current_type == "Supplement":
+                # Get items with counts for supplements
+                select_items_with_counts = dialog.get_items_with_counts()
+                if select_items_with_counts:
+                    # Format with counts (only show count if > 1)
+                    formatted_items = []
+                    for item, count in select_items_with_counts:
+                        if count == 1:
+                            formatted_items.append(item)
+                        else:
+                            formatted_items.append(f"{count} {item}")
+                    
+                    combo_str = ", ".join(formatted_items)
+                    self.entry_combo.setCurrentText(combo_str)
+                    
+                    # Save combo as stack if not already saved
+                    if current_type in self.type_stacks:
+                        if not self._exists_in_list(self.type_stacks[current_type], combo_str):
+                            self.type_stacks[current_type].append(combo_str)
+                            # refresh options to show newly saved stack when relevant
+                            if self.type.currentText() == current_type:
+                                self.update_options(current_type)
+            else:
+                # Regular handling for non-supplement types
+                select_items = dialog.get_items()
+                
+                if select_items:
+                    combo_str = ", ".join(select_items)
+                    self.entry_combo.setCurrentText(combo_str)
+                    # save combo as stack if not already saved
+                    if current_type in self.type_stacks:
+                        if not self._exists_in_list(self.type_stacks[current_type], combo_str):
+                            self.type_stacks[current_type].append(combo_str)
+                            # refresh options to show newly saved stack when relevant
+                            if self.type.currentText() == current_type:
+                                self.update_options(current_type)
 
     def add_entry(self):
         if self.time_custom.isChecked():

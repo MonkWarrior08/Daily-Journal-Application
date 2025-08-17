@@ -14,9 +14,11 @@ A simple, elegant journal application built with PySide6 that allows you to trac
 - [Usage](#usage)
 - [Data Storage](#data-storage)
 - [Example Journal Format](#example-journal-format)
+- [File Structure](#file-structure)
 - [Customization](#customization)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
+- [Development Notes](#development-notes)
 - [License](#license)
 
 ## Features
@@ -27,26 +29,25 @@ A simple, elegant journal application built with PySide6 that allows you to trac
 - Food/Supplement lists are editable: typing a new single item auto-adds it (case-insensitive, trims ends)
 - Multi-select for Food/Supplements, with auto-saved combinations as **Saved stacks** (and a Remove button to delete items or stacks)
 - Preview and inline editing of the daily journal with Save edit
-- Dedicated Notes and Changes sections stored with the day’s journal
-- Calendar date picker for viewing/creating entries for any date
+- Dedicated Notes and Changes sections stored with the day's journal
+- Persistent storage: type options and saved stacks are automatically saved and restored between sessions
 - Lightweight, fast, cross-platform (Windows, macOS, Linux)
 
 ## Screenshots
-<img width="594" height="913" alt="image" src="https://github.com/user-attachments/assets/8dd28b39-21dd-40d5-b05d-f6b7611b7d0a" />
 
+<img width="594" height="913" alt="image" src="https://github.com/user-attachments/assets/8dd28b39-21dd-40d5-b05d-f6b7611b7d0a" />
 
 ## Requirements
 
 - Python 3.6 or higher
 - PySide6 (Qt for Python)
-- Additional dependencies listed in `requirements.txt`
 
 ## Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/MonkWarrior08/Daily-Journal-Application.git
-   cd Daily-Journal-Application
+   git clone https://github.com/yourusername/journ.git
+   cd journ
    ```
 
 2. Install the required module:
@@ -54,14 +55,14 @@ A simple, elegant journal application built with PySide6 that allows you to trac
    pip install PySide6
    ```
 
-## Usage
-
-1. Run the application:
+3. Run the application:
    ```bash
    python main.py
    ```
 
-2. Add entries:
+## Usage
+
+1. Add entries:
    - Select a date (defaults to today)
    - Choose a time mode:
      - Automatic: current time is used and the time field is disabled
@@ -71,15 +72,15 @@ A simple, elegant journal application built with PySide6 that allows you to trac
      - If you choose fish, select fish type and quantity (1 or 2)
    - Food/Supplement power-user features:
      - Type a new single item to auto-add it to the list (case-insensitive, trims ends)
-     - Use select(multi) to pick several items. The combination is saved under a non-selectable “Saved stacks” header in the dropdown
+     - Use select(multi) to pick several items. The combination is saved under a non-selectable "Saved stacks" header in the dropdown
      - Use Remove to delete either a single item or a saved stack (case-insensitive match)
    - Click Add Entry
 
-3. Edit and save:
+2. Edit and save:
    - Modify the journal text in the left preview and click Save edit
    - Add Notes and Changes in their respective editors and click their Save buttons (also saved on app close)
 
-4. To view another date:
+3. To view another date:
    - Select the date from the calendar. The journal, Notes, and Changes will load if present
 
 ## Data Storage
@@ -89,6 +90,10 @@ All journal entries are stored as plain text files in the `Journal` directory. E
 ```
 Journal/<dd-MM-yyyy>.txt
 ```
+
+Additionally, the application automatically saves and restores:
+- Type options (Food, Supplement lists) in `options/type_options.json`
+- Saved multi-select stacks in `options/type_stacks.json`
 
 ## Example Journal Format
 
@@ -105,26 +110,40 @@ Notes: felt energetic in the morning
 Changes: increased L-theanine to 200mg
 ```
 
+## File Structure
+
+```
+journ/
+├── main.py              # Main application
+├── multi.py             # Multi-select dialog components
+├── Journal/             # Daily journal files
+│   └── <dd-MM-yyyy>.txt
+├── options/             # Persistent data
+│   ├── type_options.json
+│   └── type_stacks.json
+└── README.md
+```
+
 ## Customization
 
 You can customize the application by:
 
-- Adding new entry types in code
-- Changing the default time format
-- Modifying the journal file naming convention
+- Adding new entry types in the `type_options` dictionary in `main.py`
+- Modifying the default time format
+- Changing the journal file naming convention
 - Adjusting the UI theme
-
-*More details about customization options will be added soon.*
+- Adding new fish types in the `fish_type` combo box
 
 ## Troubleshooting
 
 ### Common Issues
 
-- **Application won't start**: Ensure all dependencies are installed correctly
-- **Entries not saving**: Check write permissions in the journals directory
+- **Application won't start**: Ensure PySide6 is installed correctly
+- **Entries not saving**: Check write permissions in the Journal directory
 - **UI elements not displaying correctly**: Update PySide6 to the latest version
+- **Type options not persisting**: Check write permissions in the options directory
 
-If you encounter any other issues, please [open an issue](https://github.com/yourusername/daily-journal-app/issues) with details of the problem.
+If you encounter any other issues, please [open an issue](https://github.com/yourusername/journ/issues) with details of the problem.
 
 ## Contributing
 
@@ -135,6 +154,12 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+## Development Notes
+
+- The application automatically saves type options and stacks when items are added/removed
+- All data is stored in human-readable JSON and text formats for easy backup and editing
+- The multi-select dialog supports quantity selection for supplements
 
 ## License
 

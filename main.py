@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 from datetime import datetime
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QHBoxLayout, QLabel, QPushButton, QTimeEdit,
@@ -214,11 +215,7 @@ class Journal(QMainWindow):
         # Changes header
         changes_header_layout = QHBoxLayout()
         changes_label = QLabel("Changes:")
-        self.change_butn = QPushButton("Save Changes")
-        self.change_butn.clicked.connect(self.save_changes)
-        changes_header_layout.addWidget(changes_label)
-        changes_header_layout.addWidget(self.change_butn)
-        note_layout.addLayout(changes_header_layout)
+        note_layout.addWidget(changes_label)
 
         # Changes text
         self.change_txt = QTextEdit()
@@ -245,8 +242,15 @@ class Journal(QMainWindow):
             "Discomfort": ["upper-abdominal pain", "anxiety", "fatigue", "testicular pain"],
             "Medication": ["Dexamphetamine", "Vyvanse (70mg)", "Lexapro", "Guanfacine", "Accutane"]
         }
+        
+        # Load saved type options from file
+        self.load_type_options()
+        
         # saved multi-select stacks for Food and Supplement
         self.type_stacks = {"Food": [], "Supplement": []}
+        # Load saved stacks from file
+        self.load_type_stacks()
+        
         # initialize current options
         self.update_options(self.type.currentText())
     
@@ -334,6 +338,11 @@ class Journal(QMainWindow):
         self.multi_select.setVisible(is_food_or_supp)
         self.remove_btn.setVisible(is_food_or_supp)
         self.entry_combo.setEditable(is_food_or_supp)
+        
+        # Clear the entry field when switching to Food or Supplement
+        if is_food_or_supp:
+            self.entry_combo.setCurrentText("")
+        
         self.activity_frame.setVisible(type == "Activity" or type == "Discomfort")
         self.rating_frame.setVisible(type == "Discomfort")
         
@@ -410,6 +419,8 @@ class Journal(QMainWindow):
                     if current_type in self.type_stacks:
                         if not self._exists_in_list(self.type_stacks[current_type], combo_str):
                             self.type_stacks[current_type].append(combo_str)
+                            # Save type stacks to persist the new stack
+                            self.save_type_stacks()
                             # refresh options to show newly saved stack when relevant
                             if self.type.currentText() == current_type:
                                 self.update_options(current_type)
@@ -424,6 +435,8 @@ class Journal(QMainWindow):
                     if current_type in self.type_stacks:
                         if not self._exists_in_list(self.type_stacks[current_type], combo_str):
                             self.type_stacks[current_type].append(combo_str)
+                            # Save type stacks to persist the new stack
+                            self.save_type_stacks()
                             # refresh options to show newly saved stack when relevant
                             if self.type.currentText() == current_type:
                                 self.update_options(current_type)
@@ -441,6 +454,8 @@ class Journal(QMainWindow):
             if not self._exists_in_list(self.type_options[entry_type], entry_combo):
                 sanitized = entry_combo.strip()
                 self.type_options[entry_type].append(sanitized)
+                # Save type options to persist the new item
+                self.save_type_options()
                 # refresh options to include the new item
                 self.update_options(entry_type)
                 # ensure current text remains what user typed
@@ -521,6 +536,8 @@ class Journal(QMainWindow):
         if stacks_first is not None and idx >= stacks_first:
             # remove from stacks
             if self._remove_from_list(self.type_stacks[current_type], text):
+                # Save type stacks after removal
+                self.save_type_stacks()
                 self.update_options(current_type)
         else:
             # ignore if header somehow selected
@@ -528,6 +545,8 @@ class Journal(QMainWindow):
                 return
             # remove from base options
             if self._remove_from_list(self.type_options[current_type], text):
+                # Save type options after removal
+                self.save_type_options()
                 self.update_options(current_type)
 
     def _normalize_text(self, text: str) -> str:
@@ -555,11 +574,8 @@ class Journal(QMainWindow):
     
     def save_notes(self):
         notes_content = self.note_txt.toPlainText().strip()
-        self.save_journal(notes_content=notes_content)
-
-    def save_changes(self):
         changes_content = self.change_txt.toPlainText().strip()
-        self.save_journal(changes_content=changes_content)
+        self.save_journal(notes_content=notes_content, changes_content=changes_content)
 
     def save_journal(self, notes_content=None, changes_content=None):
         filename = self.get_journal(self.date_edit.date())
@@ -581,8 +597,57 @@ class Journal(QMainWindow):
         with open(filename, 'w') as file:
             file.write(full_content)
 
+    def save_type_options(self):
+        """Save type options to a JSON file"""
+        if not os.path.exists("options"):
+            os.makedirs("options")
+        
+        filename = os.path.join("options", "type_options.json")
+        with open(filename, 'w') as file:
+            json.dump(self.type_options, file, indent=2)
+
+    def load_type_options(self):
+        """Load type options from a JSON file"""
+        filename = os.path.join("options", "type_options.json")
+        if os.path.exists(filename):
+            try:
+                with open(filename, 'r') as file:
+                    saved_options = json.load(file)
+                    # Update only the types that exist in saved data
+                    for key, value in saved_options.items():
+                        if key in self.type_options:
+                            self.type_options[key] = value
+            except (json.JSONDecodeError, FileNotFoundError):
+                pass  # Use default options if file is corrupted or doesn't exist
+
+    def save_type_stacks(self):
+        """Save type stacks to a JSON file"""
+        if not os.path.exists("options"):
+            os.makedirs("options")
+        
+        filename = os.path.join("options", "type_stacks.json")
+        with open(filename, 'w') as file:
+            json.dump(self.type_stacks, file, indent=2)
+
+    def load_type_stacks(self):
+        """Load type stacks from a JSON file"""
+        filename = os.path.join("options", "type_stacks.json")
+        if os.path.exists(filename):
+            try:
+                with open(filename, 'r') as file:
+                    saved_stacks = json.load(file)
+                    # Update only the types that exist in saved data
+                    for key, value in saved_stacks.items():
+                        if key in self.type_stacks:
+                            self.type_stacks[key] = value
+            except (json.JSONDecodeError, FileNotFoundError):
+                pass  # Use default stacks if file is corrupted or doesn't exist
+
     def closeEvent(self, event):
         self.save_journal()
+        # Save type options and stacks before closing
+        self.save_type_options()
+        self.save_type_stacks()
         super().closeEvent(event)
     
     

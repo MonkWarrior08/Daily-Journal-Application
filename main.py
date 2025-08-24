@@ -584,8 +584,9 @@ class Journal(QMainWindow):
             if not current_text.endswith("\n"):
                 current_text += "\n"
 
-        update_text = current_text + entry + "\n"
-        self.preview_text.setPlainText(update_text)
+        # Insert entry at the correct chronological position
+        sorted_text = self.insert_entry_chronologically(current_text, entry)
+        self.preview_text.setPlainText(sorted_text)
 
         self.save_journal()
 
@@ -805,7 +806,74 @@ class Journal(QMainWindow):
         # Save and update the table
         self.save_active_discomforts()
         self.update_discomfort_table()
+        
+        # Sort journal entries chronologically and update the preview
+        sorted_journal = self.sort_journal_chronologically(journal_content)
+        if sorted_journal != journal_content:
+            self.preview_text.setPlainText(sorted_journal)
 
+    def insert_entry_chronologically(self, journal_content, new_entry):
+        """Insert a new entry at the correct chronological position in the journal"""
+        lines = journal_content.strip().split('\n')
+        
+        # Extract time from new entry
+        new_entry_time = self.extract_time_from_entry(new_entry)
+        if not new_entry_time:
+            # If no time found, append to end
+            return journal_content + new_entry + "\n"
+        
+        # Find the correct position to insert
+        insert_position = len(lines)  # Default to end
+        
+        for i, line in enumerate(lines):
+            if line.startswith('Date:'):
+                continue
+                
+            line_time = self.extract_time_from_entry(line)
+            if line_time and line_time > new_entry_time:
+                insert_position = i
+                break
+        
+        # Insert the new entry at the correct position
+        lines.insert(insert_position, new_entry)
+        
+        # Reconstruct the journal content
+        return '\n'.join(lines) + '\n'
+
+    def extract_time_from_entry(self, entry):
+        """Extract time from an entry string (e.g., '11:03am take fish oil' -> '11:03am')"""
+        words = entry.strip().split()
+        if not words:
+            return None
+            
+        time_str = words[0]
+        
+        # Check if it's a valid time format (e.g., 11:03am, 2:30pm)
+        if ':' in time_str and ('am' in time_str.lower() or 'pm' in time_str.lower()):
+            return time_str.lower()
+        
+        return None
+
+    def sort_journal_chronologically(self, journal_content):
+        """Sort all journal entries chronologically"""
+        lines = journal_content.strip().split('\n')
+        
+        # Separate header from entries
+        header_lines = []
+        entry_lines = []
+        
+        for line in lines:
+            if line.startswith('Date:'):
+                header_lines.append(line)
+            else:
+                entry_lines.append(line)
+        
+        # Sort entry lines by time
+        entry_lines.sort(key=lambda x: self.extract_time_from_entry(x) or '')
+        
+        # Reconstruct journal with header first, then sorted entries
+        sorted_lines = header_lines + entry_lines
+        return '\n'.join(sorted_lines) + '\n'
 
     def save_active_discomforts(self):
         """Save active discomforts to a JSON file"""

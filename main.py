@@ -802,6 +802,26 @@ class Journal(QMainWindow):
                             "start_time": time_match,
                             "start_date": self.date_edit.date().toString("dd-MM-yyyy")
                         }
+            
+            # Also look for "finished having" entries to remove from active discomforts
+            elif 'finished having' in line:
+                # Extract discomfort name (between "having" and any additional text)
+                having_index = line.find('having')
+                if having_index != -1:
+                    # Get the text after "having" - could be "discomfort rating: X" or just "discomfort"
+                    after_having = line[having_index + 7:].strip()
+                    
+                    # Find the discomfort name - it's everything before "rating" if present
+                    if 'rating' in after_having:
+                        rating_index = after_having.find('rating')
+                        discomfort_name = after_having[:rating_index].strip()
+                    else:
+                        # If no rating, just take the whole thing after "having"
+                        discomfort_name = after_having
+                    
+                    # Remove from active discomforts if it exists
+                    if discomfort_name in self.active_discomforts:
+                        del self.active_discomforts[discomfort_name]
         
         # Save and update the table
         self.save_active_discomforts()
@@ -830,9 +850,11 @@ class Journal(QMainWindow):
                 continue
                 
             line_time = self.extract_time_from_entry(line)
-            if line_time and line_time > new_entry_time:
-                insert_position = i
-                break
+            if line_time:
+                # Use proper time comparison
+                if self.parse_time_for_sorting(line_time) > self.parse_time_for_sorting(new_entry_time):
+                    insert_position = i
+                    break
         
         # Insert the new entry at the correct position
         lines.insert(insert_position, new_entry)
@@ -854,6 +876,43 @@ class Journal(QMainWindow):
         
         return None
 
+    def parse_time_for_sorting(self, time_str):
+        """Parse time string for proper chronological sorting"""
+        if not time_str:
+            return (0, 0, 0)  # Default for invalid times
+        
+        time_str = time_str.lower().strip()
+        
+        # Handle formats like "8:30am", "10:06am", "2:15pm"
+        if ':' in time_str and ('am' in time_str or 'pm' in time_str):
+            try:
+                # Split time and period
+                if 'am' in time_str:
+                    period = 'am'
+                    time_part = time_str.replace('am', '').strip()
+                else:
+                    period = 'pm'
+                    time_part = time_str.replace('pm', '').strip()
+                
+                # Split hours and minutes
+                if ':' in time_part:
+                    hours, minutes = map(int, time_part.split(':'))
+                else:
+                    hours = int(time_part)
+                    minutes = 0
+                
+                # Convert to 24-hour format for proper sorting
+                if period == 'pm' and hours != 12:
+                    hours += 12
+                elif period == 'am' and hours == 12:
+                    hours = 0
+                
+                return (hours, minutes, 0)
+            except (ValueError, AttributeError):
+                return (0, 0, 0)
+        
+        return (0, 0, 0)  # Default for invalid times
+
     def sort_journal_chronologically(self, journal_content):
         """Sort all journal entries chronologically"""
         lines = journal_content.strip().split('\n')
@@ -868,8 +927,8 @@ class Journal(QMainWindow):
             else:
                 entry_lines.append(line)
         
-        # Sort entry lines by time
-        entry_lines.sort(key=lambda x: self.extract_time_from_entry(x) or '')
+        # Sort entry lines by time using proper time parsing
+        entry_lines.sort(key=lambda x: self.parse_time_for_sorting(self.extract_time_from_entry(x)))
         
         # Reconstruct journal with header first, then sorted entries
         sorted_lines = header_lines + entry_lines

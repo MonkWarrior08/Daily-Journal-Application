@@ -5,8 +5,9 @@ from datetime import datetime
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QHBoxLayout, QLabel, QPushButton, QTimeEdit,
                                QDateEdit, QComboBox, QRadioButton,
-                               QFrame, QTextEdit, QSplitter)
-from PySide6.QtCore import Qt, QTime, QDate
+                               QFrame, QTextEdit, QSplitter, QTableWidget,
+                               QTableWidgetItem, QHeaderView, QMessageBox)
+from PySide6.QtCore import Qt, QTime, QDate, QTimer
 from multi import MultiDialogue, MultiDialogueWithCounts
 
 
@@ -225,15 +226,13 @@ class Journal(QMainWindow):
 
         splitter.setSizes([300,200])
 
-        self.load_journal()
-
         # type options
         self.type_options = {
             "Daily": ["poop"],
-            "Food": ["fish", "dumplings", "ginger", "plum", "pelimini", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal",
+            "Food": ["fish", "dumplings", "ginger", "plum", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal",
                      "peanut butter", "chips", "chips(sweet potatoes)", "tuna and beans", "chocolate", "orange", "yogurt(with cereal and berries), creatine",
                     "strawberries", "chips(corn)", "steak, noodles, salad with special sauce", "salmon(oyster sauce)"],
-            "Activity": ["walk", "ice bath", "run"],
+            "Activity": ["walk", "ice bath", "run", "uni"],
             "Supplement": [
                 "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp", "L-tryptophan",
                 "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate", "vit d", "aniracetam", "digestive enzyme",
@@ -251,8 +250,29 @@ class Journal(QMainWindow):
         # Load saved stacks from file
         self.load_type_stacks()
         
+        # Active discomforts tracking
+        self.active_discomforts = {}  # {discomfort_name: {"rating": int, "start_time": str, "start_date": str}}
+        
+        # Load active discomforts from file
+        self.load_active_discomforts()
+        
+        # Setup timer to update discomfort durations
+        self.discomfort_timer = QTimer()
+        self.discomfort_timer.timeout.connect(self.update_discomfort_table)
+        self.discomfort_timer.start(60000)  # Update every minute
+        
+        # Add discomfort tracking section
+        self.setup_discomfort_tracking()
+        main_layout.addWidget(self.discomfort_tracking_frame)
+        
         # initialize current options
         self.update_options(self.type.currentText())
+        
+        # Load journal after everything is initialized
+        self.load_journal()
+        
+        # Initialize discomfort table display
+        self.update_discomfort_table()
     
 
     def on_time_mode_changed(self):
@@ -323,6 +343,10 @@ class Journal(QMainWindow):
             date_str = self.date_edit.date().toString("dd-MM-yyyy")
             header_date = f"Date: {date_str}\n"
             self.preview_text.setPlainText(header_date)
+        
+        # Update discomfort table when date changes
+        if hasattr(self, 'discomfort_table'):
+            self.update_discomfort_table()
 
     def update_options(self, type):
         self.entry_combo.clear()
@@ -345,6 +369,12 @@ class Journal(QMainWindow):
         
         self.activity_frame.setVisible(type == "Activity" or type == "Discomfort")
         self.rating_frame.setVisible(type == "Discomfort")
+        
+        # Always show discomfort tracking (no need to hide/show based on type)
+        
+        # Update discomfort table to ensure it's current
+        if hasattr(self, 'discomfort_table'):
+            self.update_discomfort_table()
         
         # Hide dosage frame by default
         self.dosage_frame.setVisible(False)
@@ -475,6 +505,41 @@ class Journal(QMainWindow):
             if not entry_combo:
                 return
             activity_type = "started" if self.activity_start.isChecked() else "finished"
+            
+            # Handle discomfort tracking
+            if activity_type == "started":
+                # Add to active discomforts if not already there, or update if exists
+                rating = 1
+                if self.rating_2.isChecked():
+                    rating = 2
+                elif self.rating_3.isChecked():
+                    rating = 3
+                elif self.rating_4.isChecked():
+                    rating = 4
+                
+                if entry_combo not in self.active_discomforts:
+                    # New discomfort - add to tracking
+                    self.active_discomforts[entry_combo] = {
+                        "rating": rating,
+                        "start_time": time_str,
+                        "start_date": self.date_edit.date().toString("dd-MM-yyyy")
+                    }
+                else:
+                    # Existing discomfort - update rating and time
+                    self.active_discomforts[entry_combo]["rating"] = rating
+                    self.active_discomforts[entry_combo]["start_time"] = time_str
+                    self.active_discomforts[entry_combo]["start_date"] = self.date_edit.date().toString("dd-MM-yyyy")
+                
+                self.save_active_discomforts()
+                self.update_discomfort_table()
+            else:  # finished
+                # Remove from active discomforts
+                if entry_combo in self.active_discomforts:
+                    del self.active_discomforts[entry_combo]
+                    self.save_active_discomforts()
+                    self.update_discomfort_table()
+            
+            # Create journal entry
             if self.rating_1.isChecked():
                 entry = f"{time_str} {activity_type} having {entry_combo} rating: 1"
             elif self.rating_2.isChecked():
@@ -571,11 +636,15 @@ class Journal(QMainWindow):
 
     def save_preview(self):
         self.save_journal()
+        # Update active discomforts based on edited journal content
+        self.update_active_discomforts_from_journal()
     
     def save_notes(self):
         notes_content = self.note_txt.toPlainText().strip()
         changes_content = self.change_txt.toPlainText().strip()
         self.save_journal(notes_content=notes_content, changes_content=changes_content)
+        # Update active discomforts based on current journal content
+        self.update_active_discomforts_from_journal()
 
     def save_journal(self, notes_content=None, changes_content=None):
         filename = self.get_journal(self.date_edit.date())
@@ -643,11 +712,126 @@ class Journal(QMainWindow):
             except (json.JSONDecodeError, FileNotFoundError):
                 pass  # Use default stacks if file is corrupted or doesn't exist
 
+    def setup_discomfort_tracking(self):
+        """Setup the discomfort tracking table and controls"""
+        self.discomfort_tracking_frame = QFrame()
+        discomfort_layout = QVBoxLayout(self.discomfort_tracking_frame)
+        
+        # Header
+        discomfort_header = QHBoxLayout()
+        discomfort_label = QLabel("Active Discomforts:")
+        discomfort_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        discomfort_header.addWidget(discomfort_label)
+        discomfort_header.addStretch()
+        
+        discomfort_layout.addLayout(discomfort_header)
+
+        # Table for active discomforts
+        self.discomfort_table = QTableWidget()
+        self.discomfort_table.setColumnCount(3)
+        self.discomfort_table.setHorizontalHeaderLabels(["Discomfort", "Rating", "Start Time"])
+        self.discomfort_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.discomfort_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.discomfort_table.setMaximumHeight(150)
+        discomfort_layout.addWidget(self.discomfort_table)
+
+
+
+    def update_discomfort_table(self):
+        """Update the discomfort tracking table"""
+        self.discomfort_table.setRowCount(0)
+        
+        for i, (discomfort_name, data) in enumerate(self.active_discomforts.items()):
+            self.discomfort_table.insertRow(i)
+            
+            # Discomfort name
+            name_item = QTableWidgetItem(discomfort_name)
+            self.discomfort_table.setItem(i, 0, name_item)
+            
+            # Rating
+            rating_item = QTableWidgetItem(f"Rating {data['rating']}")
+            self.discomfort_table.setItem(i, 1, rating_item)
+            
+            # Start time (only time, no date)
+            start_time_item = QTableWidgetItem(data['start_time'])
+            self.discomfort_table.setItem(i, 2, start_time_item)
+
+    def update_active_discomforts_from_journal(self):
+        """Parse the edited journal content and update active discomforts accordingly"""
+        journal_content = self.preview_text.toPlainText()
+        lines = journal_content.strip().split('\n')
+        
+        # Clear current active discomforts
+        self.active_discomforts.clear()
+        
+        # Parse each line to find discomfort entries
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith('Date:'):
+                continue
+                
+            # Look for discomfort patterns: "time started having discomfort rating: X"
+            # or "time started having discomfort rating X"
+            if 'started having' in line and 'rating' in line:
+                # Extract time
+                time_match = line.split()[0]  # First word should be time
+                
+                # Extract discomfort name (between "having" and "rating")
+                if 'having' in line and 'rating' in line:
+                    having_index = line.find('having')
+                    rating_index = line.find('rating')
+                    if having_index != -1 and rating_index != -1:
+                        discomfort_name = line[having_index + 7:rating_index].strip()
+                        
+                        # Extract rating
+                        rating_part = line[rating_index:].strip()
+                        rating = 1  # default
+                        if 'rating: 1' in rating_part or 'rating 1' in rating_part:
+                            rating = 1
+                        elif 'rating: 2' in rating_part or 'rating 2' in rating_part:
+                            rating = 2
+                        elif 'rating: 3' in rating_part or 'rating 3' in rating_part:
+                            rating = 3
+                        elif 'rating: 4' in rating_part or 'rating 4' in rating_part:
+                            rating = 4
+                        
+                        # Update active discomforts (this will overwrite previous entries for same discomfort)
+                        self.active_discomforts[discomfort_name] = {
+                            "rating": rating,
+                            "start_time": time_match,
+                            "start_date": self.date_edit.date().toString("dd-MM-yyyy")
+                        }
+        
+        # Save and update the table
+        self.save_active_discomforts()
+        self.update_discomfort_table()
+
+
+    def save_active_discomforts(self):
+        """Save active discomforts to a JSON file"""
+        if not os.path.exists("Journal"):
+            os.makedirs("Journal")
+        
+        filename = os.path.join("Journal", "active_discomforts.json")
+        with open(filename, 'w') as file:
+            json.dump(self.active_discomforts, file, indent=2)
+
+    def load_active_discomforts(self):
+        """Load active discomforts from a JSON file"""
+        filename = os.path.join("Journal", "active_discomforts.json")
+        if os.path.exists(filename):
+            try:
+                with open(filename, 'r') as file:
+                    self.active_discomforts = json.load(file)
+            except (json.JSONDecodeError, FileNotFoundError):
+                self.active_discomforts = {}
+
     def closeEvent(self, event):
         self.save_journal()
         # Save type options and stacks before closing
         self.save_type_options()
         self.save_type_stacks()
+        self.save_active_discomforts() # Save active discomforts on close
         super().closeEvent(event)
     
     

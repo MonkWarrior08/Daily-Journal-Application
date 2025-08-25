@@ -683,10 +683,21 @@ class Journal(QMainWindow):
             try:
                 with open(filename, 'r') as file:
                     saved_options = json.load(file)
-                    # Update only the types that exist in saved data
-                    for key, value in saved_options.items():
+                    # Merge saved options with default options instead of replacing
+                    for key, saved_value in saved_options.items():
                         if key in self.type_options:
-                            self.type_options[key] = value
+                            # Get the default options for this type
+                            default_options = self.type_options[key]
+                            # Create a set of all options (default + saved) to avoid duplicates
+                            all_options = list(default_options)  # Start with defaults
+                            
+                            # Add saved options that aren't already in defaults
+                            for saved_item in saved_value:
+                                if saved_item not in all_options:
+                                    all_options.append(saved_item)
+                            
+                            # Update the type options with merged list
+                            self.type_options[key] = all_options
             except (json.JSONDecodeError, FileNotFoundError):
                 pass  # Use default options if file is corrupted or doesn't exist
 

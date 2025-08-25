@@ -181,6 +181,9 @@ class Journal(QMainWindow):
         splitter.setChildrenCollapsible(False)
         main_layout.addWidget(splitter, 1) #stretch factor of 1
 
+        # Setup discomfort tracking before creating the preview layout
+        self.setup_discomfort_tracking()
+
         #journal preview section
         preview = QWidget()
         preview_layout = QVBoxLayout(preview)
@@ -264,9 +267,6 @@ class Journal(QMainWindow):
         self.discomfort_timer = QTimer()
         self.discomfort_timer.timeout.connect(self.update_discomfort_table)
         self.discomfort_timer.start(60000)  # Update every minute
-        
-        # Add discomfort tracking section
-        self.setup_discomfort_tracking()
         
         # initialize current options
         self.update_options(self.type.currentText())

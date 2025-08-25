@@ -194,6 +194,10 @@ class Journal(QMainWindow):
         preview_layout.addWidget(preview_label)
         preview_layout.addWidget(self.preview_text)
         preview_layout.addWidget(self.preview_save_btn)
+        
+        # Add discomfort tracking below journal preview
+        preview_layout.addWidget(self.discomfort_tracking_frame)
+        
         splitter.addWidget(preview)
 
         # note and changes section
@@ -224,7 +228,7 @@ class Journal(QMainWindow):
 
         splitter.addWidget(note)
 
-        splitter.setSizes([300,200])
+        splitter.setSizes([400,200])
 
         # type options
         self.type_options = {
@@ -263,7 +267,6 @@ class Journal(QMainWindow):
         
         # Add discomfort tracking section
         self.setup_discomfort_tracking()
-        main_layout.addWidget(self.discomfort_tracking_frame)
         
         # initialize current options
         self.update_options(self.type.currentText())

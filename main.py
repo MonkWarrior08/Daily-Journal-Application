@@ -6,7 +6,8 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QHBoxLayout, QLabel, QPushButton, QTimeEdit,
                                QDateEdit, QComboBox, QRadioButton,
                                QFrame, QTextEdit, QSplitter, QTableWidget,
-                               QTableWidgetItem, QHeaderView, QMessageBox)
+                               QTableWidgetItem, QHeaderView, QMessageBox,
+                               QSizePolicy)
 from PySide6.QtCore import Qt, QTime, QDate, QTimer
 from multi import MultiDialogue, MultiDialogueWithCounts
 
@@ -176,13 +177,17 @@ class Journal(QMainWindow):
         self.entry_butn.clicked.connect(self.add_entry)
         main_layout.addWidget(self.entry_butn)
 
-        # splitter for preview and note section
-        splitter = QSplitter(Qt.Vertical)
-        splitter.setChildrenCollapsible(False)
-        main_layout.addWidget(splitter, 1) #stretch factor of 1
+        # Main horizontal splitter for left (journal + discomfort) and right (notes) sides
+        main_splitter = QSplitter(Qt.Horizontal)
+        main_splitter.setChildrenCollapsible(False)
+        main_layout.addWidget(main_splitter, 1) #stretch factor of 1
 
         # Setup discomfort tracking before creating the preview layout
         self.setup_discomfort_tracking()
+
+        # Left side: Journal and Discomfort tracking in vertical splitter
+        left_splitter = QSplitter(Qt.Vertical)
+        left_splitter.setChildrenCollapsible(False)
 
         #journal preview section
         preview = QWidget()
@@ -198,12 +203,18 @@ class Journal(QMainWindow):
         preview_layout.addWidget(self.preview_text)
         preview_layout.addWidget(self.preview_save_btn)
         
-        # Add discomfort tracking below journal preview
-        preview_layout.addWidget(self.discomfort_tracking_frame)
-        
-        splitter.addWidget(preview)
+        left_splitter.addWidget(preview)
 
-        # note and changes section
+        # Discomfort tracking as a separate resizable section
+        left_splitter.addWidget(self.discomfort_tracking_frame)
+
+        # Set left splitter sizes for Journal and Discomfort sections
+        left_splitter.setSizes([300, 200])
+
+        # Add left side to main splitter
+        main_splitter.addWidget(left_splitter)
+
+        # Right side: Notes and Changes
         note = QWidget()
         note_layout = QVBoxLayout(note)
 
@@ -229,10 +240,12 @@ class Journal(QMainWindow):
         self.change_txt = QTextEdit()
         note_layout.addWidget(self.change_txt)
 
-        splitter.addWidget(note)
+        # Add right side to main splitter
+        main_splitter.addWidget(note)
 
-        splitter.setSizes([400,200])
-
+        # Set main splitter sizes for left and right sides
+        main_splitter.setSizes([600, 300])
+        
         # type options
         self.type_options = {
             "Daily": ["poop"],
@@ -747,7 +760,9 @@ class Journal(QMainWindow):
         self.discomfort_table.setHorizontalHeaderLabels(["Discomfort", "Rating", "Start Time"])
         self.discomfort_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.discomfort_table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.discomfort_table.setMaximumHeight(150)
+        # Make table expandable both horizontally and vertically
+        self.discomfort_table.setMinimumHeight(100)
+        self.discomfort_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         discomfort_layout.addWidget(self.discomfort_table)
 
 

@@ -605,6 +605,10 @@ class Journal(QMainWindow):
         self.preview_text.setPlainText(sorted_text)
 
         self.save_journal()
+        
+        # Reset time selection to Automatic after adding entry
+        self.time_auto.setChecked(True)
+        self.on_time_mode_changed()
 
     def remove_current_entry(self):
         current_type = self.type.currentText()

@@ -104,15 +104,13 @@ class Journal(QMainWindow):
         dosage_layout = QHBoxLayout(dosage_frame)
         dosage_label = QLabel("Dosage:")
 
-        self.dosage1 = QRadioButton("5")
-        self.dosage2 = QRadioButton("10")
-        self.dosage3 = QRadioButton("15")
+        self.dosage1 = QRadioButton("5mg")
+        self.dosage2 = QRadioButton("10mg")
         self.dosage1.setChecked(True)
 
         dosage_layout.addWidget(dosage_label)
         dosage_layout.addWidget(self.dosage1)
         dosage_layout.addWidget(self.dosage2)
-        dosage_layout.addWidget(self.dosage3)
         dosage_layout.addStretch()
 
         # setvisible and main layout to activity, rating and dosage
@@ -133,7 +131,7 @@ class Journal(QMainWindow):
         fish_layout = QHBoxLayout(fish_frame)
         fish_label = QLabel("Fish:")
         self.fish_type = QComboBox()
-        self.fish_type.addItems(["basal fillet", "barramundi"])
+        self.fish_type.addItems(["basa fillet", "barramundi", "hoki fillet"])
         qty_label = QLabel("Qty:")
         self.fish_qty1 = QRadioButton("1")
         self.fish_qty2 = QRadioButton("2")
@@ -401,6 +399,11 @@ class Journal(QMainWindow):
         if type == "Food":
             self.entry_combo.currentTextChanged.connect(self.handle_food_change)
             self.handle_food_change(self.entry_combo.currentText())
+        
+        # Show dosage frame when Medication -> Dexamphetamine
+        if type == "Medication":
+            self.entry_combo.currentTextChanged.connect(self.handle_medication_change)
+            self.handle_medication_change(self.entry_combo.currentText())
 
         # Append saved stacks section for Food/Supplement
         if type in self.type_stacks and self.type_stacks[type]:
@@ -421,6 +424,8 @@ class Journal(QMainWindow):
 
     def handle_medication_change(self, medication):
         self.dosage_frame.setVisible(medication == "Dexamphetamine")
+        if medication == "Dexamphetamine":
+            self.dosage1.setChecked(True)  # Reset to default 5mg
 
     def handle_food_change(self, item):
         is_fish = (self._normalize_text(item) == "fish")
@@ -585,7 +590,10 @@ class Journal(QMainWindow):
                     entry = f"{time_str} ate {entry_combo}"
             elif entry_type == "Medication":
                 if entry_combo == "Dexamphetamine":
-                    entry = f"{time_str} took medication - {entry_combo} (5mg)"
+                    if self.dosage1.isChecked():
+                        entry = f"{time_str} took medication - {entry_combo} (5mg)"
+                    else:
+                        entry = f"{time_str} took medication - {entry_combo} (10mg)"
                 else:
                     entry = f"{time_str} took medication - {entry_combo}"
             else:

@@ -131,11 +131,7 @@ class Journal(QMainWindow):
         fish_layout = QHBoxLayout(fish_frame)
         fish_label = QLabel("Fish:")
         self.fish_type = QComboBox()
-<<<<<<< HEAD
-        self.fish_type.addItems(["basal fillet", "barramundi"])
-=======
         self.fish_type.addItems(["basa fillet", "barramundi", "hoki fillet"])
->>>>>>> 55b7a576cb2fa66d0f33cdd033c66a81cf60f269
         qty_label = QLabel("Qty:")
         self.fish_qty1 = QRadioButton("1")
         self.fish_qty2 = QRadioButton("2")
@@ -259,11 +255,7 @@ class Journal(QMainWindow):
                 "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp", "L-tryptophan",
                 "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate", "vit d", "aniracetam", "digestive enzyme",
                  "fish oil", "john wort", "panadol", "bcaa", "bismuth potassium", "creatine", "silymarine", "magnesium", "moringa",
-<<<<<<< HEAD
-                 "gotu kola", "benfotiamine", "oxytocin", "CBD oil", "reishi", "rutin", "quercetin", "Holy basil", "Bromantane(25mg)"],
-=======
-                 "gotu kola", "benfotiamine", "oxytocin", "CBD oil", "reishi", "rutin", "quercetin", "Holy basil"],
->>>>>>> 55b7a576cb2fa66d0f33cdd033c66a81cf60f269
+                 "gotu kola", "benfotiamine", "oxytocin", "CBD oil", "reishi", "rutin", "quercetin", "Holy basil", "Bromantane(50mg)"],
             "Discomfort": ["upper-abdominal pain", "anxiety", "fatigue", "testicular pain"],
             "Medication": ["Dexamphetamine", "Vyvanse (70mg)", "Lexapro", "Guanfacine", "Accutane"]
         }
@@ -407,31 +399,11 @@ class Journal(QMainWindow):
         if type == "Food":
             self.entry_combo.currentTextChanged.connect(self.handle_food_change)
             self.handle_food_change(self.entry_combo.currentText())
-<<<<<<< HEAD
-
-        # Append saved stacks section for Food/Supplement
-        if type in self.type_stacks and self.type_stacks[type]:
-            base_count = self.entry_combo.count()
-            self.entry_combo.insertSeparator(base_count)
-            self.entry_combo_stack_sep_index = base_count
-            self.entry_combo.addItem("Saved stacks")
-            header_index = base_count + 1
-            self.entry_combo_stack_header_index = header_index
-            try:
-                item = self.entry_combo.model().item(header_index)
-                if item:
-                    item.setEnabled(False)
-            except Exception:
-                pass
-            self.entry_combo_stacks_first_index = header_index + 1
-            self.entry_combo.addItems(self.type_stacks[type])
-=======
         
         # Show dosage frame when Medication -> Dexamphetamine
         if type == "Medication":
             self.entry_combo.currentTextChanged.connect(self.handle_medication_change)
             self.handle_medication_change(self.entry_combo.currentText())
->>>>>>> 55b7a576cb2fa66d0f33cdd033c66a81cf60f269
 
         # Append saved stacks section for Food/Supplement
         if type in self.type_stacks and self.type_stacks[type]:
@@ -454,12 +426,6 @@ class Journal(QMainWindow):
         self.dosage_frame.setVisible(medication == "Dexamphetamine")
         if medication == "Dexamphetamine":
             self.dosage1.setChecked(True)  # Reset to default 5mg
-
-    def handle_food_change(self, item):
-        is_fish = (self._normalize_text(item) == "fish")
-        self.fish_frame.setVisible(is_fish)
-        if is_fish:
-            self.fish_qty1.setChecked(True)
 
     def handle_food_change(self, item):
         is_fish = (self._normalize_text(item) == "fish")
@@ -624,14 +590,10 @@ class Journal(QMainWindow):
                     entry = f"{time_str} ate {entry_combo}"
             elif entry_type == "Medication":
                 if entry_combo == "Dexamphetamine":
-<<<<<<< HEAD
-                    entry = f"{time_str} took medication - {entry_combo} (5mg)"
-=======
                     if self.dosage1.isChecked():
                         entry = f"{time_str} took medication - {entry_combo} (5mg)"
                     else:
                         entry = f"{time_str} took medication - {entry_combo} (10mg)"
->>>>>>> 55b7a576cb2fa66d0f33cdd033c66a81cf60f269
                 else:
                     entry = f"{time_str} took medication - {entry_combo}"
             else:

@@ -1,12 +1,15 @@
 import sys
 import os
+import json
 from datetime import datetime
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QHBoxLayout, QLabel, QPushButton, QTimeEdit,
                                QDateEdit, QComboBox, QRadioButton,
-                               QFrame, QTextEdit, QSplitter)
-from PySide6.QtCore import Qt, QTime, QDate
-from multi import MultiDialogue
+                               QFrame, QTextEdit, QSplitter, QTableWidget,
+                               QTableWidgetItem, QHeaderView, QMessageBox,
+                               QSizePolicy)
+from PySide6.QtCore import Qt, QTime, QDate, QTimer
+from multi import MultiDialogue, MultiDialogueWithCounts
 
 
 class Journal(QMainWindow):
@@ -38,13 +41,20 @@ class Journal(QMainWindow):
         time_label = QLabel('Time:')
 
         self.time_edit = QTimeEdit(QTime.currentTime())
-        self.current_time_btn = QPushButton("Current Time")
-        self.current_time_btn.clicked.connect(self.current_time)
+        self.time_auto = QRadioButton("Automatic")
+        self.time_custom = QRadioButton("Custom")
+        self.time_auto.setChecked(True)
+        self.time_auto.toggled.connect(self.on_time_mode_changed)
+        self.time_custom.toggled.connect(self.on_time_mode_changed)
 
         time_layout.addWidget(time_label)
+        time_layout.addWidget(self.time_auto)
+        time_layout.addWidget(self.time_custom)
         time_layout.addWidget(self.time_edit)
-        time_layout.addWidget(self.current_time_btn)
         main_layout.addLayout(time_layout)
+
+        # initialize time mode (disable editor when automatic)
+        self.on_time_mode_changed()
 
         # type section
         type_layout = QHBoxLayout()
@@ -118,6 +128,28 @@ class Journal(QMainWindow):
         self.dosage_frame = dosage_frame
         main_layout.addWidget(dosage_frame)
 
+        # fish details section (only for Food -> fish)
+        fish_frame = QFrame()
+        fish_layout = QHBoxLayout(fish_frame)
+        fish_label = QLabel("Fish:")
+        self.fish_type = QComboBox()
+        self.fish_type.addItems(["basal fillet", "barramundi"])
+        qty_label = QLabel("Qty:")
+        self.fish_qty1 = QRadioButton("1")
+        self.fish_qty2 = QRadioButton("2")
+        self.fish_qty1.setChecked(True)
+
+        fish_layout.addWidget(fish_label)
+        fish_layout.addWidget(self.fish_type)
+        fish_layout.addWidget(qty_label)
+        fish_layout.addWidget(self.fish_qty1)
+        fish_layout.addWidget(self.fish_qty2)
+        fish_layout.addStretch()
+
+        fish_frame.setVisible(False)
+        self.fish_frame = fish_frame
+        main_layout.addWidget(fish_frame)
+
         # entry section
         content_layout = QHBoxLayout()
         content_label = QLabel("Entry:")
@@ -130,10 +162,14 @@ class Journal(QMainWindow):
         self.multi_select = QPushButton("select(multi)")
         self.multi_select.clicked.connect(self.open_multi_select)
         self.multi_select.setVisible(True)
+        self.remove_btn = QPushButton("Remove")
+        self.remove_btn.clicked.connect(self.remove_current_entry)
+        self.remove_btn.setVisible(False)
 
         content_layout.addWidget(content_label)
         content_layout.addWidget(self.entry_combo)
         content_layout.addWidget(self.multi_select)
+        content_layout.addWidget(self.remove_btn)
         main_layout.addLayout(content_layout)
 
         # add entry button
@@ -141,10 +177,17 @@ class Journal(QMainWindow):
         self.entry_butn.clicked.connect(self.add_entry)
         main_layout.addWidget(self.entry_butn)
 
-        # splitter for preview and note section
-        splitter = QSplitter(Qt.Vertical)
-        splitter.setChildrenCollapsible(False)
-        main_layout.addWidget(splitter, 1) #stretch factor of 1
+        # Main horizontal splitter for left (journal + discomfort) and right (notes) sides
+        main_splitter = QSplitter(Qt.Horizontal)
+        main_splitter.setChildrenCollapsible(False)
+        main_layout.addWidget(main_splitter, 1) #stretch factor of 1
+
+        # Setup discomfort tracking before creating the preview layout
+        self.setup_discomfort_tracking()
+
+        # Left side: Journal and Discomfort tracking in vertical splitter
+        left_splitter = QSplitter(Qt.Vertical)
+        left_splitter.setChildrenCollapsible(False)
 
         #journal preview section
         preview = QWidget()
@@ -159,49 +202,99 @@ class Journal(QMainWindow):
         preview_layout.addWidget(preview_label)
         preview_layout.addWidget(self.preview_text)
         preview_layout.addWidget(self.preview_save_btn)
-        splitter.addWidget(preview)
+        
+        left_splitter.addWidget(preview)
 
-        # note section
+        # Discomfort tracking as a separate resizable section
+        left_splitter.addWidget(self.discomfort_tracking_frame)
+
+        # Set left splitter sizes for Journal and Discomfort sections
+        left_splitter.setSizes([300, 200])
+
+        # Add left side to main splitter
+        main_splitter.addWidget(left_splitter)
+
+        # Right side: Notes and Changes
         note = QWidget()
         note_layout = QVBoxLayout(note)
+
+        # Notes header
         note_header_layout = QHBoxLayout()
         note_label = QLabel("Notes:")
         self.note_butn = QPushButton("Save Notes")
         self.note_butn.clicked.connect(self.save_notes)
-        
         note_header_layout.addWidget(note_label)
         note_header_layout.addWidget(self.note_butn)
         note_layout.addLayout(note_header_layout)
 
+        # Notes text
         self.note_txt = QTextEdit()
         note_layout.addWidget(self.note_txt)
-        splitter.addWidget(note)
 
-        splitter.setSizes([300,200])
+        # Changes header
+        changes_header_layout = QHBoxLayout()
+        changes_label = QLabel("Changes:")
+        note_layout.addWidget(changes_label)
 
-        self.load_journal()
+        # Changes text
+        self.change_txt = QTextEdit()
+        note_layout.addWidget(self.change_txt)
 
+        # Add right side to main splitter
+        main_splitter.addWidget(note)
+
+        # Set main splitter sizes for left and right sides
+        main_splitter.setSizes([600, 300])
+        
         # type options
         self.type_options = {
-            "Daily": ["Woke up", "poop"],
-            "Food": ["fish", "dumplings", "ginger", "plum", "pelimini", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal",
+            "Daily": ["poop"],
+            "Food": ["fish", "dumplings", "ginger", "plum", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal",
                      "peanut butter", "chips", "chips(sweet potatoes)", "tuna and beans", "chocolate", "orange", "yogurt(with cereal and berries), creatine",
                     "strawberries", "chips(corn)", "steak, noodles, salad with special sauce", "salmon(oyster sauce)"],
-            "Drink": ["green tea", "coconut water", "fruit juice", "kefir", "milk", "protein powder"],
-            "Activity": ["walk", "ice bath", "run", "tACS", "tDCS", "RLT"],
+            "Activity": ["walk", "ice bath", "run", "uni"],
             "Supplement": [
                 "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp", "L-tryptophan",
                 "slippery elm", "zinc", "lecithin", "p5p", "Alpha-GPC", "Methy-Folate", "vit d", "aniracetam", "digestive enzyme",
                  "fish oil", "john wort", "panadol", "bcaa", "bismuth potassium", "creatine", "silymarine", "magnesium", "moringa",
-                 "gotu kola", "benfotiamine", "oxytocin", "CBD oil", "reishi", "rutin", "quercetin", "Holy basil"],
-            "Discomfort": ["upper-abdominal pain", "testicular pain", "anxiety", "fatigue", "tongue reaction"],
-            "Medication": ["Dexamphetamine", "Vyvanse (70mg)", "Lexapro", "Guanfacine", "Accutane", "Candesartan", "LDN", "Metoprolol (1/2)"]
+                 "gotu kola", "benfotiamine", "oxytocin", "CBD oil", "reishi", "rutin", "quercetin", "Holy basil", "Bromantane(25mg)"],
+            "Discomfort": ["upper-abdominal pain", "anxiety", "fatigue", "testicular pain"],
+            "Medication": ["Dexamphetamine", "Vyvanse (70mg)", "Lexapro", "Guanfacine", "Accutane"]
         }
+        
+        # Load saved type options from file
+        self.load_type_options()
+        
+        # saved multi-select stacks for Food and Supplement
+        self.type_stacks = {"Food": [], "Supplement": []}
+        # Load saved stacks from file
+        self.load_type_stacks()
+        
+        # Active discomforts tracking
+        self.active_discomforts = {}  # {discomfort_name: {"rating": int, "start_time": str, "start_date": str}}
+        
+        # Load active discomforts from file
+        self.load_active_discomforts()
+        
+        # Setup timer to update discomfort durations
+        self.discomfort_timer = QTimer()
+        self.discomfort_timer.timeout.connect(self.update_discomfort_table)
+        self.discomfort_timer.start(60000)  # Update every minute
+        
         # initialize current options
         self.update_options(self.type.currentText())
+        
+        # Load journal after everything is initialized
+        self.load_journal()
+        
+        # Initialize discomfort table display
+        self.update_discomfort_table()
     
 
-    def current_time(self):
+    def on_time_mode_changed(self):
+        is_custom = self.time_custom.isChecked()
+        self.time_edit.setEnabled(is_custom)
+        # initialize editor starting from current time when switching modes
         self.time_edit.setTime(QTime.currentTime())
 
 
@@ -220,27 +313,56 @@ class Journal(QMainWindow):
         filename = self.get_journal(self.date_edit.date())
         self.preview_text.clear()
         self.note_txt.clear()
+        if hasattr(self, 'change_txt'):
+            self.change_txt.clear()
 
         if os.path.exists(filename):
             with open(filename, 'r') as file:
                 content = file.read()
 
-            # check if Notes: section exist
-            if "Notes:" in content:
-                parts = content.split("Notes:", 1) #split between journal and notes. 
-                journal_entry = parts[0].strip()
-                notes = parts[1].strip()
+            # Parse optional Notes: and Changes: sections
+            journal_entry = content
+            notes_text = ""
+            changes_text = ""
 
-                self.preview_text.setPlainText(journal_entry)
-                self.note_txt.setPlainText(notes)
-            
+            # find markers
+            idx_notes = content.find("Notes:")
+            idx_changes = content.find("Changes:")
+
+            # determine journal portion as content before the earliest marker (if any)
+            indices = [i for i in [idx_notes, idx_changes] if i != -1]
+            if indices:
+                first_idx = min(indices)
+                journal_entry = content[:first_idx].strip()
             else:
-                self.preview_text.setPlainText(content)
+                journal_entry = content
+
+            # extract notes text
+            if idx_notes != -1:
+                start = idx_notes + len("Notes:")
+                end = len(content) if idx_changes == -1 else idx_changes
+                notes_text = content[start:end].strip()
+
+            # extract changes text
+            if idx_changes != -1:
+                start = idx_changes + len("Changes:")
+                end = len(content)
+                changes_text = content[start:end].strip()
+
+            self.preview_text.setPlainText(journal_entry)
+            if notes_text:
+                self.note_txt.setPlainText(notes_text)
+            if changes_text and hasattr(self, 'change_txt'):
+                self.change_txt.setPlainText(changes_text)
 
         else: #if empty, add date header
             date_str = self.date_edit.date().toString("dd-MM-yyyy")
             header_date = f"Date: {date_str}\n"
             self.preview_text.setPlainText(header_date)
+        
+        # Update discomfort table when date changes
+        if hasattr(self, 'discomfort_table'):
+            self.update_discomfort_table()
 
     def update_options(self, type):
         self.entry_combo.clear()
@@ -252,40 +374,138 @@ class Journal(QMainWindow):
         except:
             pass
 
-        self.multi_select.setVisible(type == "Supplement" or type == "Food")
-        self.entry_combo.setEditable(type == "Supplement" or type == "Food")
+        is_food_or_supp = (type == "Supplement" or type == "Food")
+        self.multi_select.setVisible(is_food_or_supp)
+        self.remove_btn.setVisible(is_food_or_supp)
+        self.entry_combo.setEditable(is_food_or_supp)
+        
+        # Clear the entry field when switching to Food or Supplement
+        if is_food_or_supp:
+            self.entry_combo.setCurrentText("")
+        
         self.activity_frame.setVisible(type == "Activity" or type == "Discomfort")
         self.rating_frame.setVisible(type == "Discomfort")
         
+        # Always show discomfort tracking (no need to hide/show based on type)
+        
+        # Update discomfort table to ensure it's current
+        if hasattr(self, 'discomfort_table'):
+            self.update_discomfort_table()
+        
         # Hide dosage frame by default
         self.dosage_frame.setVisible(False)
+        # Hide fish frame by default
+        self.fish_frame.setVisible(False)
         
-        # Show dosage frame when Dexamphetamine is selected
-        if type == "Medication":
-            self.entry_combo.currentTextChanged.connect(self.handle_medication_change)
-            # Check initial value
-            self.handle_medication_change(self.entry_combo.currentText())
+        # Show fish details when Food -> fish
+        if type == "Food":
+            self.entry_combo.currentTextChanged.connect(self.handle_food_change)
+            self.handle_food_change(self.entry_combo.currentText())
+
+        # Append saved stacks section for Food/Supplement
+        if type in self.type_stacks and self.type_stacks[type]:
+            base_count = self.entry_combo.count()
+            self.entry_combo.insertSeparator(base_count)
+            self.entry_combo_stack_sep_index = base_count
+            self.entry_combo.addItem("Saved stacks")
+            header_index = base_count + 1
+            self.entry_combo_stack_header_index = header_index
+            try:
+                item = self.entry_combo.model().item(header_index)
+                if item:
+                    item.setEnabled(False)
+            except Exception:
+                pass
+            self.entry_combo_stacks_first_index = header_index + 1
+            self.entry_combo.addItems(self.type_stacks[type])
 
     def handle_medication_change(self, medication):
         self.dosage_frame.setVisible(medication == "Dexamphetamine")
 
+    def handle_food_change(self, item):
+        is_fish = (self._normalize_text(item) == "fish")
+        self.fish_frame.setVisible(is_fish)
+        if is_fish:
+            self.fish_qty1.setChecked(True)
+
     def open_multi_select(self):
         current_type = self.type.currentText()
-        dialog = MultiDialogue(
-            self,
-            options=self.type_options[current_type],
-            title="Select {current_type}"
-        )
-        if dialog.exec():
-            select_items = dialog.get_items()
+        
+        # Use MultiDialogueWithCounts for supplements, regular MultiDialogue for others
+        if current_type == "Supplement":
+            dialog = MultiDialogueWithCounts(
+                self,
+                options=self.type_options[current_type],
+                title=f"Select {current_type}"
+            )
+        else:
+            dialog = MultiDialogue(
+                self,
+                options=self.type_options[current_type],
+                title=f"Select {current_type}"
+            )
             
-            if select_items:
-                self.entry_combo.setCurrentText(", ".join(select_items))
+        if dialog.exec():
+            if current_type == "Supplement":
+                # Get items with counts for supplements
+                select_items_with_counts = dialog.get_items_with_counts()
+                if select_items_with_counts:
+                    # Format with counts (only show count if > 1)
+                    formatted_items = []
+                    for item, count in select_items_with_counts:
+                        if count == 1:
+                            formatted_items.append(item)
+                        else:
+                            formatted_items.append(f"{count} {item}")
+                    
+                    combo_str = ", ".join(formatted_items)
+                    self.entry_combo.setCurrentText(combo_str)
+                    
+                    # Save combo as stack if not already saved
+                    if current_type in self.type_stacks:
+                        if not self._exists_in_list(self.type_stacks[current_type], combo_str):
+                            self.type_stacks[current_type].append(combo_str)
+                            # Save type stacks to persist the new stack
+                            self.save_type_stacks()
+                            # refresh options to show newly saved stack when relevant
+                            if self.type.currentText() == current_type:
+                                self.update_options(current_type)
+            else:
+                # Regular handling for non-supplement types
+                select_items = dialog.get_items()
+                
+                if select_items:
+                    combo_str = ", ".join(select_items)
+                    self.entry_combo.setCurrentText(combo_str)
+                    # save combo as stack if not already saved
+                    if current_type in self.type_stacks:
+                        if not self._exists_in_list(self.type_stacks[current_type], combo_str):
+                            self.type_stacks[current_type].append(combo_str)
+                            # Save type stacks to persist the new stack
+                            self.save_type_stacks()
+                            # refresh options to show newly saved stack when relevant
+                            if self.type.currentText() == current_type:
+                                self.update_options(current_type)
 
     def add_entry(self):
-        time_str = self.time_edit.time().toString("h:mma").lower()
+        if self.time_custom.isChecked():
+            time_str = self.time_edit.time().toString("h:mma").lower()
+        else:
+            time_str = QTime.currentTime().toString("h:mma").lower()
         entry_type = self.type.currentText()
         entry_combo = self.entry_combo.currentText().strip()
+
+        # For Food/Supplement: auto-add new single item to options (case-insensitive, trimmed)
+        if entry_type in ("Food", "Supplement") and entry_combo and "," not in entry_combo:
+            if not self._exists_in_list(self.type_options[entry_type], entry_combo):
+                sanitized = entry_combo.strip()
+                self.type_options[entry_type].append(sanitized)
+                # Save type options to persist the new item
+                self.save_type_options()
+                # refresh options to include the new item
+                self.update_options(entry_type)
+                # ensure current text remains what user typed
+                self.entry_combo.setCurrentText(sanitized)
 
         if entry_type == "Daily":
             entry = f"{time_str} {entry_combo}"
@@ -301,6 +521,41 @@ class Journal(QMainWindow):
             if not entry_combo:
                 return
             activity_type = "started" if self.activity_start.isChecked() else "finished"
+            
+            # Handle discomfort tracking
+            if activity_type == "started":
+                # Add to active discomforts if not already there, or update if exists
+                rating = 1
+                if self.rating_2.isChecked():
+                    rating = 2
+                elif self.rating_3.isChecked():
+                    rating = 3
+                elif self.rating_4.isChecked():
+                    rating = 4
+                
+                if entry_combo not in self.active_discomforts:
+                    # New discomfort - add to tracking
+                    self.active_discomforts[entry_combo] = {
+                        "rating": rating,
+                        "start_time": time_str,
+                        "start_date": self.date_edit.date().toString("dd-MM-yyyy")
+                    }
+                else:
+                    # Existing discomfort - update rating and time
+                    self.active_discomforts[entry_combo]["rating"] = rating
+                    self.active_discomforts[entry_combo]["start_time"] = time_str
+                    self.active_discomforts[entry_combo]["start_date"] = self.date_edit.date().toString("dd-MM-yyyy")
+                
+                self.save_active_discomforts()
+                self.update_discomfort_table()
+            else:  # finished
+                # Remove from active discomforts
+                if entry_combo in self.active_discomforts:
+                    del self.active_discomforts[entry_combo]
+                    self.save_active_discomforts()
+                    self.update_discomfort_table()
+            
+            # Create journal entry
             if self.rating_1.isChecked():
                 entry = f"{time_str} {activity_type} having {entry_combo} rating: 1"
             elif self.rating_2.isChecked():
@@ -319,15 +574,18 @@ class Journal(QMainWindow):
             elif entry_type == "Drink":
                 entry = f"{time_str} drink {entry_combo}"
             elif entry_type == "Food":
-                entry = f"{time_str} ate {entry_combo}"
+                if entry_combo == "fish" and self.fish_frame.isVisible():
+                    fish_kind = self.fish_type.currentText()
+                    qty = 2 if self.fish_qty2.isChecked() else 1
+                    if qty == 1:
+                        entry = f"{time_str} ate fish({fish_kind})"
+                    else:
+                        entry = f"{time_str} ate {qty} fish({fish_kind})"
+                else:
+                    entry = f"{time_str} ate {entry_combo}"
             elif entry_type == "Medication":
                 if entry_combo == "Dexamphetamine":
-                    if self.dosage1.isChecked():
-                        entry = f"{time_str} took medication - {entry_combo} (5mg)"
-                    elif self.dosage2.isChecked():
-                        entry = f"{time_str} took medication - {entry_combo} (10mg)"
-                    else:
-                        entry = f"{time_str} took medication - {entry_combo} (15mg)"
+                    entry = f"{time_str} took medication - {entry_combo} (5mg)"
                 else:
                     entry = f"{time_str} took medication - {entry_combo}"
             else:
@@ -342,37 +600,398 @@ class Journal(QMainWindow):
             if not current_text.endswith("\n"):
                 current_text += "\n"
 
-        update_text = current_text + entry + "\n"
-        self.preview_text.setPlainText(update_text)
+        # Insert entry at the correct chronological position
+        sorted_text = self.insert_entry_chronologically(current_text, entry)
+        self.preview_text.setPlainText(sorted_text)
 
         self.save_journal()
-        self.current_time()            
+        
+        # Reset time selection to Automatic after adding entry
+        self.time_auto.setChecked(True)
+        self.on_time_mode_changed()
+
+    def remove_current_entry(self):
+        current_type = self.type.currentText()
+        if current_type not in ("Food", "Supplement"):
+            return
+        idx = self.entry_combo.currentIndex()
+        text = self.entry_combo.currentText()
+        # Determine if removing a saved stack or a base item
+        stacks_first = getattr(self, 'entry_combo_stacks_first_index', None)
+        header_idx = getattr(self, 'entry_combo_stack_header_index', None)
+        if stacks_first is not None and idx >= stacks_first:
+            # remove from stacks
+            if self._remove_from_list(self.type_stacks[current_type], text):
+                # Save type stacks after removal
+                self.save_type_stacks()
+                self.update_options(current_type)
+        else:
+            # ignore if header somehow selected
+            if header_idx is not None and idx == header_idx:
+                return
+            # remove from base options
+            if self._remove_from_list(self.type_options[current_type], text):
+                # Save type options after removal
+                self.save_type_options()
+                self.update_options(current_type)
+
+    def _normalize_text(self, text: str) -> str:
+        if text is None:
+            return ""
+        return text.casefold().strip()
+
+    def _exists_in_list(self, items, candidate: str) -> bool:
+        candidate_norm = self._normalize_text(candidate)
+        for existing in items:
+            if self._normalize_text(existing) == candidate_norm:
+                return True
+        return False
+
+    def _remove_from_list(self, items, candidate: str) -> bool:
+        candidate_norm = self._normalize_text(candidate)
+        for i, existing in enumerate(items):
+            if self._normalize_text(existing) == candidate_norm:
+                del items[i]
+                return True
+        return False
 
     def save_preview(self):
         self.save_journal()
+        # Update active discomforts based on edited journal content
+        self.update_active_discomforts_from_journal()
     
     def save_notes(self):
         notes_content = self.note_txt.toPlainText().strip()
-        self.save_journal(notes_content)
+        changes_content = self.change_txt.toPlainText().strip()
+        self.save_journal(notes_content=notes_content, changes_content=changes_content)
+        # Update active discomforts based on current journal content
+        self.update_active_discomforts_from_journal()
 
-    def save_journal(self, notes_content=None):
+    def save_journal(self, notes_content=None, changes_content=None):
         filename = self.get_journal(self.date_edit.date())
 
         journal_content = self.preview_text.toPlainText()
 
         if notes_content is None:
             notes_content = self.note_txt.toPlainText().strip()
-        
+        if changes_content is None and hasattr(self, 'change_txt'):
+            changes_content = self.change_txt.toPlainText().strip()
+
+        # Build full content with optional sections
+        full_content = journal_content.rstrip()
         if notes_content:
-            full_content = f"{journal_content.rstrip()}\n\nNotes: {notes_content}"
-        else:
-            full_content = journal_content
+            full_content += f"\n\nNotes: {notes_content}"
+        if changes_content:
+            full_content += f"\n\nChanges: {changes_content}"
 
         with open(filename, 'w') as file:
             file.write(full_content)
 
+    def save_type_options(self):
+        """Save type options to a JSON file"""
+        if not os.path.exists("options"):
+            os.makedirs("options")
+        
+        filename = os.path.join("options", "type_options.json")
+        with open(filename, 'w') as file:
+            json.dump(self.type_options, file, indent=2)
+
+    def load_type_options(self):
+        """Load type options from a JSON file"""
+        filename = os.path.join("options", "type_options.json")
+        if os.path.exists(filename):
+            try:
+                with open(filename, 'r') as file:
+                    saved_options = json.load(file)
+                    # Merge saved options with default options instead of replacing
+                    for key, saved_value in saved_options.items():
+                        if key in self.type_options:
+                            # Get the default options for this type
+                            default_options = self.type_options[key]
+                            # Create a set of all options (default + saved) to avoid duplicates
+                            all_options = list(default_options)  # Start with defaults
+                            
+                            # Add saved options that aren't already in defaults
+                            for saved_item in saved_value:
+                                if saved_item not in all_options:
+                                    all_options.append(saved_item)
+                            
+                            # Update the type options with merged list
+                            self.type_options[key] = all_options
+            except (json.JSONDecodeError, FileNotFoundError):
+                pass  # Use default options if file is corrupted or doesn't exist
+
+    def save_type_stacks(self):
+        """Save type stacks to a JSON file"""
+        if not os.path.exists("options"):
+            os.makedirs("options")
+        
+        filename = os.path.join("options", "type_stacks.json")
+        with open(filename, 'w') as file:
+            json.dump(self.type_stacks, file, indent=2)
+
+    def load_type_stacks(self):
+        """Load type stacks from a JSON file"""
+        filename = os.path.join("options", "type_stacks.json")
+        if os.path.exists(filename):
+            try:
+                with open(filename, 'r') as file:
+                    saved_stacks = json.load(file)
+                    # Update only the types that exist in saved data
+                    for key, value in saved_stacks.items():
+                        if key in self.type_stacks:
+                            self.type_stacks[key] = value
+            except (json.JSONDecodeError, FileNotFoundError):
+                pass  # Use default stacks if file is corrupted or doesn't exist
+
+    def setup_discomfort_tracking(self):
+        """Setup the discomfort tracking table and controls"""
+        self.discomfort_tracking_frame = QFrame()
+        discomfort_layout = QVBoxLayout(self.discomfort_tracking_frame)
+        
+        # Header
+        discomfort_header = QHBoxLayout()
+        discomfort_label = QLabel("Active Discomforts:")
+        discomfort_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        discomfort_header.addWidget(discomfort_label)
+        discomfort_header.addStretch()
+        
+        discomfort_layout.addLayout(discomfort_header)
+
+        # Table for active discomforts
+        self.discomfort_table = QTableWidget()
+        self.discomfort_table.setColumnCount(3)
+        self.discomfort_table.setHorizontalHeaderLabels(["Discomfort", "Rating", "Start Time"])
+        self.discomfort_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.discomfort_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        # Make table expandable both horizontally and vertically
+        self.discomfort_table.setMinimumHeight(100)
+        self.discomfort_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        discomfort_layout.addWidget(self.discomfort_table)
+
+
+
+    def update_discomfort_table(self):
+        """Update the discomfort tracking table"""
+        self.discomfort_table.setRowCount(0)
+        
+        for i, (discomfort_name, data) in enumerate(self.active_discomforts.items()):
+            self.discomfort_table.insertRow(i)
+            
+            # Discomfort name
+            name_item = QTableWidgetItem(discomfort_name)
+            self.discomfort_table.setItem(i, 0, name_item)
+            
+            # Rating
+            rating_item = QTableWidgetItem(f"Rating {data['rating']}")
+            self.discomfort_table.setItem(i, 1, rating_item)
+            
+            # Start time (only time, no date)
+            start_time_item = QTableWidgetItem(data['start_time'])
+            self.discomfort_table.setItem(i, 2, start_time_item)
+
+    def update_active_discomforts_from_journal(self):
+        """Parse the edited journal content and update active discomforts accordingly"""
+        journal_content = self.preview_text.toPlainText()
+        lines = journal_content.strip().split('\n')
+        
+        # Clear current active discomforts
+        self.active_discomforts.clear()
+        
+        # Parse each line to find discomfort entries
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith('Date:'):
+                continue
+                
+            # Look for discomfort patterns: "time started having discomfort rating: X"
+            # or "time started having discomfort rating X"
+            if 'started having' in line and 'rating' in line:
+                # Extract time
+                time_match = line.split()[0]  # First word should be time
+                
+                # Extract discomfort name (between "having" and "rating")
+                if 'having' in line and 'rating' in line:
+                    having_index = line.find('having')
+                    rating_index = line.find('rating')
+                    if having_index != -1 and rating_index != -1:
+                        discomfort_name = line[having_index + 7:rating_index].strip()
+                        
+                        # Extract rating
+                        rating_part = line[rating_index:].strip()
+                        rating = 1  # default
+                        if 'rating: 1' in rating_part or 'rating 1' in rating_part:
+                            rating = 1
+                        elif 'rating: 2' in rating_part or 'rating 2' in rating_part:
+                            rating = 2
+                        elif 'rating: 3' in rating_part or 'rating 3' in rating_part:
+                            rating = 3
+                        elif 'rating: 4' in rating_part or 'rating 4' in rating_part:
+                            rating = 4
+                        
+                        # Update active discomforts (this will overwrite previous entries for same discomfort)
+                        self.active_discomforts[discomfort_name] = {
+                            "rating": rating,
+                            "start_time": time_match,
+                            "start_date": self.date_edit.date().toString("dd-MM-yyyy")
+                        }
+            
+            # Also look for "finished having" entries to remove from active discomforts
+            elif 'finished having' in line:
+                # Extract discomfort name (between "having" and any additional text)
+                having_index = line.find('having')
+                if having_index != -1:
+                    # Get the text after "having" - could be "discomfort rating: X" or just "discomfort"
+                    after_having = line[having_index + 7:].strip()
+                    
+                    # Find the discomfort name - it's everything before "rating" if present
+                    if 'rating' in after_having:
+                        rating_index = after_having.find('rating')
+                        discomfort_name = after_having[:rating_index].strip()
+                    else:
+                        # If no rating, just take the whole thing after "having"
+                        discomfort_name = after_having
+                    
+                    # Remove from active discomforts if it exists
+                    if discomfort_name in self.active_discomforts:
+                        del self.active_discomforts[discomfort_name]
+        
+        # Save and update the table
+        self.save_active_discomforts()
+        self.update_discomfort_table()
+        
+        # Sort journal entries chronologically and update the preview
+        sorted_journal = self.sort_journal_chronologically(journal_content)
+        if sorted_journal != journal_content:
+            self.preview_text.setPlainText(sorted_journal)
+
+    def insert_entry_chronologically(self, journal_content, new_entry):
+        """Insert a new entry at the correct chronological position in the journal"""
+        lines = journal_content.strip().split('\n')
+        
+        # Extract time from new entry
+        new_entry_time = self.extract_time_from_entry(new_entry)
+        if not new_entry_time:
+            # If no time found, append to end
+            return journal_content + new_entry + "\n"
+        
+        # Find the correct position to insert
+        insert_position = len(lines)  # Default to end
+        
+        for i, line in enumerate(lines):
+            if line.startswith('Date:'):
+                continue
+                
+            line_time = self.extract_time_from_entry(line)
+            if line_time:
+                # Use proper time comparison
+                if self.parse_time_for_sorting(line_time) > self.parse_time_for_sorting(new_entry_time):
+                    insert_position = i
+                    break
+        
+        # Insert the new entry at the correct position
+        lines.insert(insert_position, new_entry)
+        
+        # Reconstruct the journal content
+        return '\n'.join(lines) + '\n'
+
+    def extract_time_from_entry(self, entry):
+        """Extract time from an entry string (e.g., '11:03am take fish oil' -> '11:03am')"""
+        words = entry.strip().split()
+        if not words:
+            return None
+            
+        time_str = words[0]
+        
+        # Check if it's a valid time format (e.g., 11:03am, 2:30pm)
+        if ':' in time_str and ('am' in time_str.lower() or 'pm' in time_str.lower()):
+            return time_str.lower()
+        
+        return None
+
+    def parse_time_for_sorting(self, time_str):
+        """Parse time string for proper chronological sorting"""
+        if not time_str:
+            return (0, 0, 0)  # Default for invalid times
+        
+        time_str = time_str.lower().strip()
+        
+        # Handle formats like "8:30am", "10:06am", "2:15pm"
+        if ':' in time_str and ('am' in time_str or 'pm' in time_str):
+            try:
+                # Split time and period
+                if 'am' in time_str:
+                    period = 'am'
+                    time_part = time_str.replace('am', '').strip()
+                else:
+                    period = 'pm'
+                    time_part = time_str.replace('pm', '').strip()
+                
+                # Split hours and minutes
+                if ':' in time_part:
+                    hours, minutes = map(int, time_part.split(':'))
+                else:
+                    hours = int(time_part)
+                    minutes = 0
+                
+                # Convert to 24-hour format for proper sorting
+                if period == 'pm' and hours != 12:
+                    hours += 12
+                elif period == 'am' and hours == 12:
+                    hours = 0
+                
+                return (hours, minutes, 0)
+            except (ValueError, AttributeError):
+                return (0, 0, 0)
+        
+        return (0, 0, 0)  # Default for invalid times
+
+    def sort_journal_chronologically(self, journal_content):
+        """Sort all journal entries chronologically"""
+        lines = journal_content.strip().split('\n')
+        
+        # Separate header from entries
+        header_lines = []
+        entry_lines = []
+        
+        for line in lines:
+            if line.startswith('Date:'):
+                header_lines.append(line)
+            else:
+                entry_lines.append(line)
+        
+        # Sort entry lines by time using proper time parsing
+        entry_lines.sort(key=lambda x: self.parse_time_for_sorting(self.extract_time_from_entry(x)))
+        
+        # Reconstruct journal with header first, then sorted entries
+        sorted_lines = header_lines + entry_lines
+        return '\n'.join(sorted_lines) + '\n'
+
+    def save_active_discomforts(self):
+        """Save active discomforts to a JSON file"""
+        if not os.path.exists("Journal"):
+            os.makedirs("Journal")
+        
+        filename = os.path.join("Journal", "active_discomforts.json")
+        with open(filename, 'w') as file:
+            json.dump(self.active_discomforts, file, indent=2)
+
+    def load_active_discomforts(self):
+        """Load active discomforts from a JSON file"""
+        filename = os.path.join("Journal", "active_discomforts.json")
+        if os.path.exists(filename):
+            try:
+                with open(filename, 'r') as file:
+                    self.active_discomforts = json.load(file)
+            except (json.JSONDecodeError, FileNotFoundError):
+                self.active_discomforts = {}
+
     def closeEvent(self, event):
         self.save_journal()
+        # Save type options and stacks before closing
+        self.save_type_options()
+        self.save_type_stacks()
+        self.save_active_discomforts() # Save active discomforts on close
         super().closeEvent(event)
     
     

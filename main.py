@@ -250,6 +250,7 @@ class Journal(QMainWindow):
             "Food": ["fish", "dumplings", "ginger", "plum", "olive paste", "cumin", "olive oil", "spinash", "pizza", "little fish", "cereal",
                      "peanut butter", "chips", "chips(sweet potatoes)", "tuna and beans", "chocolate", "orange", "yogurt(with cereal and berries), creatine",
                     "strawberries", "chips(corn)", "steak, noodles, salad with special sauce", "salmon(oyster sauce)"],
+            "Drink": ["electrolyte"],
             "Activity": ["walk", "ice bath", "run", "uni"],
             "Supplement": [
                 "vit c", "L-theanine", "DL-phenyl", "NAC", "Ashwagandha", "lithium", "Bacopa Monniery", "5-htp", "L-tryptophan",
